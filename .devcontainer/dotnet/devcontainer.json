@@ -1,0 +1,14 @@
+{
+    "name": ".NET Devcontainer",
+    "image": "mcr.microsoft.com/dotnet/core/sdk:3.1",
+    "features": {},
+    "settings": {
+        "dotnet.defaultSolution": "/workspace/solution.sln"
+    },
+    "extensions": [
+        "ms-dotnettools.csharp",
+        "ms-vscode.vscode-typescript-tslint-plugin"
+    ],
+    "postCreateCommand": "dotnet restore",
+    "remoteUser": "vscode"
+}
