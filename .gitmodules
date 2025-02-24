@@ -1,0 +1,3 @@
+[submodule "dotnet/submodules/semantic-kernel"]
+	path = dotnet/submodules/semantic-kernel
+	url = https://github.com/hsm207/semantic-kernel.git
