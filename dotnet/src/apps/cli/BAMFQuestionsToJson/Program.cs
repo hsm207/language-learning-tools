@@ -22,11 +22,17 @@ public class Program
     {
         try
         {
-            // Create services
-            IServiceFactory serviceFactory = new ServiceFactory();
-            ICommandLineConfiguration commandLineConfig = new Configuration.CommandLineConfiguration();
+            // Initialize basic services
             ILogger logger = new ConsoleLogger();
             IErrorHandler errorHandler = new ErrorHandler(logger);
+            ICommandLineConfiguration commandLineConfig = new Configuration.CommandLineConfiguration();
+
+            // Parse command line arguments first
+            var rootCommand = commandLineConfig.BuildRootCommand();
+            var parseResult = rootCommand.Parse(args);
+            
+            // Create service factory with parsed configuration
+            IServiceFactory serviceFactory = new ServiceFactory(parseResult);
 
             return await RunApplicationAsync(args, serviceFactory, commandLineConfig, logger, errorHandler);
         }

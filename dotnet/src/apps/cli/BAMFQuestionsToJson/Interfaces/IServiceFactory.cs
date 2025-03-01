@@ -48,4 +48,19 @@ public interface IServiceFactory
         string outputFilePath,
         int? limit,
         int batchSize);
+
+    /// <summary>
+    /// Checks if a Google AI key is configured.
+    /// </summary>
+    /// <returns>True if a Google AI key is configured, otherwise false.</returns>
+    bool HasGoogleAiKey();
+
+    /// <summary>
+    /// Checks if a Google AI model is configured.
+    /// </summary>
+    /// <returns>True if a Google AI model is configured, otherwise false.</returns>
+    bool HasGoogleAiModel();
+
+    // Update constructor in interface if you're using default interface implementations
+    // or add new factory methods that use the configuration
 }

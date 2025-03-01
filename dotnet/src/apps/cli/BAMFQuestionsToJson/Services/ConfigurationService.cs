@@ -1,4 +1,6 @@
 using Microsoft.Extensions.Configuration;
+using System.CommandLine;
+using System.CommandLine.Parsing;
 
 namespace LanguageLearningTools.BAMFQuestionsToJson.Services;
 
@@ -8,12 +10,47 @@ namespace LanguageLearningTools.BAMFQuestionsToJson.Services;
 public class ConfigurationService
 {
     private readonly IConfiguration _configuration;
+    private readonly string? _googleAiApiKey;
+    private readonly string? _googleAiModelId;
+    private readonly ParseResult? _parseResult;
+    private readonly Option<string> _apiKeyOption = new Option<string>("--google-ai-api-key", "Google AI API key (overrides value in secret manager)");
+    private readonly Option<string> _modelIdOption = new Option<string>("--google-ai-model-id", "Google AI model ID (overrides value in secret manager)");
 
     /// <summary>
     /// Initializes a new instance of the ConfigurationService class.
     /// </summary>
-    public ConfigurationService()
+    public ConfigurationService() : this(null, null) {}
+
+    /// <summary>
+    /// Initializes a new instance of the ConfigurationService class.
+    /// </summary>
+    public ConfigurationService(string? googleAiApiKey = null, string? googleAiModelId = null)
     {
+        _googleAiApiKey = googleAiApiKey;
+        _googleAiModelId = googleAiModelId;
+        _configuration = new ConfigurationBuilder()
+            .AddUserSecrets<ConfigurationService>()
+            .Build();
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the ConfigurationService class.
+    /// </summary>
+    public ConfigurationService(ParseResult parseResult)
+    {
+        _parseResult = parseResult;
+        
+        // Find options by name instead of using our own Option instances
+        _googleAiApiKey = parseResult.CommandResult.Children
+            .OfType<OptionResult>()
+            .FirstOrDefault(o => o.Option.Name == "google-ai-api-key")
+            ?.GetValueOrDefault<string>();
+            
+        _googleAiModelId = parseResult.CommandResult.Children
+            .OfType<OptionResult>()
+            .FirstOrDefault(o => o.Option.Name == "google-ai-model-id")
+            ?.GetValueOrDefault<string>();
+            
         _configuration = new ConfigurationBuilder()
             .AddUserSecrets<ConfigurationService>()
             .Build();
@@ -22,12 +59,14 @@ public class ConfigurationService
     /// <summary>
     /// Gets the Google AI model ID from configuration.
     /// </summary>
-    public virtual string? GetGoogleAiModelId() => _configuration["GoogleAI:ModelId"];
+    public virtual string? GetGoogleAiModelId() =>
+        _googleAiModelId ?? _configuration["GoogleAI:ModelId"];
 
     /// <summary>
     /// Gets the Google AI API key from configuration.
     /// </summary>
-    public virtual string? GetGoogleAiApiKey() => _configuration["GoogleAI:ApiKey"];
+    public virtual string? GetGoogleAiApiKey() =>
+        _googleAiApiKey ?? _configuration["GoogleAI:ApiKey"];
 
     /// <summary>
     /// Checks if the required Google AI configuration is available.

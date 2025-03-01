@@ -2,6 +2,7 @@ using LanguageLearningTools.BAMFQuestionsToJson.Commands;
 using LanguageLearningTools.BAMFQuestionsToJson.Interfaces;
 using LanguageLearningTools.BAMFQuestionsToJson.Services;
 using Microsoft.SemanticKernel;
+using System.CommandLine.Parsing;
 
 namespace LanguageLearningTools.BAMFQuestionsToJson.Factories;
 
@@ -11,6 +12,7 @@ namespace LanguageLearningTools.BAMFQuestionsToJson.Factories;
 public class ServiceFactory : IServiceFactory
 {
     private readonly ConfigurationService _configurationService;
+    private readonly ParseResult? _parseResult;
 
     /// <summary>
     /// Initializes a new instance of the ServiceFactory class.
@@ -18,6 +20,7 @@ public class ServiceFactory : IServiceFactory
     public ServiceFactory()
     {
         _configurationService = new ConfigurationService();
+        _parseResult = null; // Initialize with a default value or handle appropriately
     }
 
     /// <summary>
@@ -26,6 +29,28 @@ public class ServiceFactory : IServiceFactory
     /// <param name="configurationService">The configuration service to use.</param>
     public ServiceFactory(ConfigurationService configurationService)
     {
+        _configurationService = configurationService ?? throw new ArgumentNullException(nameof(configurationService));
+        _parseResult = null; // Initialize with a default value or handle appropriately
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the ServiceFactory class with parsed command line arguments.
+    /// </summary>
+    /// <param name="parseResult">The parsed command line arguments.</param>
+    public ServiceFactory(ParseResult parseResult)
+    {
+        _parseResult = parseResult ?? throw new ArgumentNullException(nameof(parseResult));
+        _configurationService = new ConfigurationService(parseResult);
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the ServiceFactory class with parsed command line arguments and a specific configuration service.
+    /// </summary>
+    /// <param name="parseResult">The parsed command line arguments.</param>
+    /// <param name="configurationService">The configuration service to use.</param>
+    public ServiceFactory(ParseResult parseResult, ConfigurationService configurationService)
+    {
+        _parseResult = parseResult ?? throw new ArgumentNullException(nameof(parseResult));
         _configurationService = configurationService ?? throw new ArgumentNullException(nameof(configurationService));
     }
 
@@ -94,5 +119,15 @@ public class ServiceFactory : IServiceFactory
             outputFilePath,
             limit,
             batchSize);
+    }
+
+    public bool HasGoogleAiKey()
+    {
+        return !string.IsNullOrEmpty(_configurationService.GetGoogleAiApiKey());
+    }
+
+    public bool HasGoogleAiModel()
+    {
+        return !string.IsNullOrEmpty(_configurationService.GetGoogleAiModelId());
     }
 }

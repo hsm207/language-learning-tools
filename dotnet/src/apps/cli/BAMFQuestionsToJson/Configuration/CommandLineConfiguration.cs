@@ -38,11 +38,25 @@ public class CommandLineConfiguration : ICommandLineConfiguration
             getDefaultValue: () => 100
         );
 
+        var googleAiApiKeyOption = new Option<string?>(
+            name: "--google-ai-api-key",
+            description: "Google AI API key (overrides value in secret manager)",
+            getDefaultValue: () => null
+        );
+
+        var googleAiModelIdOption = new Option<string?>(
+            name: "--google-ai-model-id",
+            description: "Google AI model ID (overrides value in secret manager)",
+            getDefaultValue: () => null
+        );
+
         var rootCommand = new RootCommand("Convert BAMF question screenshots to JSON");
         rootCommand.AddOption(inputOption);
         rootCommand.AddOption(outputOption);
         rootCommand.AddOption(limitOption);
         rootCommand.AddOption(batchSizeOption);
+        rootCommand.AddOption(googleAiApiKeyOption);
+        rootCommand.AddOption(googleAiModelIdOption);
 
         return rootCommand;
     }
@@ -55,8 +69,14 @@ public class CommandLineConfiguration : ICommandLineConfiguration
     public void RegisterCommandHandler(RootCommand rootCommand, IServiceFactory serviceFactory)
     {
         rootCommand.SetHandler(
-            async (string input, string output, int? limit, int batchSize) =>
+            async (string input, string output, int? limit, int batchSize, string? googleAiApiKey, string? googleAiModelId) =>
             {
+                if (string.IsNullOrEmpty(googleAiApiKey) && !serviceFactory.HasGoogleAiKey())
+                    throw new ArgumentException("Google AI API key must be provided either via --google-ai-api-key or secret manager");
+
+                if (string.IsNullOrEmpty(googleAiModelId) && !serviceFactory.HasGoogleAiModel())
+                    throw new ArgumentException("Google AI model ID must be provided either via --google-ai-model-id or secret manager");
+
                 await ProgramOrchestrator.ExecuteProcessingCommandAsync(
                     serviceFactory,
                     input,
@@ -67,7 +87,9 @@ public class CommandLineConfiguration : ICommandLineConfiguration
             rootCommand.Options.OfType<Option<string>>().First(o => o.Name == "input"),
             rootCommand.Options.OfType<Option<string>>().First(o => o.Name == "output"),
             rootCommand.Options.OfType<Option<int?>>().First(o => o.Name == "limit"),
-            rootCommand.Options.OfType<Option<int>>().First(o => o.Name == "batch-size")
+            rootCommand.Options.OfType<Option<int>>().First(o => o.Name == "batch-size"),
+            rootCommand.Options.OfType<Option<string?>>().First(o => o.Name == "google-ai-api-key"),
+            rootCommand.Options.OfType<Option<string?>>().First(o => o.Name == "google-ai-model-id")
         );
     }
 }

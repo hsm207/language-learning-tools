@@ -29,11 +29,31 @@ Options:
   --limit <count>      Maximum number of files to process (optional)
   --batch <size>       Number of files to process before saving (default: 100)
   --resume <index>     Resume processing from file index (optional)
+  --google-ai-key <key> Google AI API key (overrides value in secret manager)
+  --google-ai-model <model> Google AI model name (overrides value in secret manager)
   --help               Show this help message
 
 Example:
   BAMFQuestionsToJson --input "screenshots" --output "questions.json" --batch 50
 ```
+
+### Specifying Google AI Credentials
+
+You can specify the Google AI model and API key in two ways:
+
+1. **Via CLI Options**: Provide the `--google-ai-api-key` and `--google-ai-model-id` options when running the tool.
+
+```bash
+BAMFQuestionsToJson --input "screenshots" --output "questions.json" --google-ai-api-key "YOUR_API_KEY" --google-ai-model-id "YOUR_MODEL_ID"
+```
+
+2. **Via Secret Manager**: Store the Google AI model ID and API key in the secret manager with the keys `GoogleAI:ModelId` and `GoogleAI:ApiKey`. The tool will automatically use these credentials if the CLI options are not provided.
+
+```bash
+BAMFQuestionsToJson --input "screenshots" --output "questions.json"
+```
+
+The tool will prioritize the credentials provided via the CLI over those in the secret manager. If neither is available, it will throw an error, ensuring that the necessary credentials are always provided.
 
 ## Output Format
 
