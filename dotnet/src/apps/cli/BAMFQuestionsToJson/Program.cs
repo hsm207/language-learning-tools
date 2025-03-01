@@ -27,16 +27,16 @@ public class Program
             ILogger logger = new ConsoleLogger();
             IErrorHandler errorHandler = new ErrorHandler(logger);
             ICommandLineConfiguration commandLineConfig = new Configuration.CommandLineConfiguration();
-            
+
             // Build and configure command line interface
             var rootCommand = commandLineConfig.BuildRootCommand();
-            
+
             try
             {
                 // Create service factory with parsed configuration
                 IServiceFactory serviceFactory = new ServiceFactory(rootCommand.Parse(args));
                 commandLineConfig.RegisterCommandHandler(rootCommand, serviceFactory);
-                
+
                 // Execute command
                 return await rootCommand.InvokeAsync(args);
             }

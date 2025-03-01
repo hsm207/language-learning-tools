@@ -19,7 +19,7 @@ public class ConfigurationService
     /// <summary>
     /// Initializes a new instance of the ConfigurationService class.
     /// </summary>
-    public ConfigurationService() : this(null, null) {}
+    public ConfigurationService() : this(null, null) { }
 
     /// <summary>
     /// Initializes a new instance of the ConfigurationService class.
@@ -39,18 +39,18 @@ public class ConfigurationService
     public ConfigurationService(ParseResult parseResult)
     {
         _parseResult = parseResult;
-        
+
         // Find options by name instead of using our own Option instances
         _googleAiApiKey = parseResult.CommandResult.Children
             .OfType<OptionResult>()
             .FirstOrDefault(o => o.Option.Name == "google-ai-api-key")
             ?.GetValueOrDefault<string>();
-            
+
         _googleAiModelId = parseResult.CommandResult.Children
             .OfType<OptionResult>()
             .FirstOrDefault(o => o.Option.Name == "google-ai-model-id")
             ?.GetValueOrDefault<string>();
-            
+
         _configuration = new ConfigurationBuilder()
             .AddUserSecrets<ConfigurationService>()
             .Build();
