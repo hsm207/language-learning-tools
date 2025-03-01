@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace LanguageLearningTools.BAMFQuestionsToJson.Models;
 
-internal sealed class BamfQuestion
+public sealed class BamfQuestion
 {
     [JsonPropertyName("num")]
     public int QuestionNumber { get; set; } = new();
@@ -14,7 +14,7 @@ internal sealed class BamfQuestion
     public EnglishContent English { get; set; } = new();
 }
 
-internal sealed class GermanContent
+public sealed class GermanContent
 {
     [JsonPropertyName("Question")]
     public string Question { get; set; } = string.Empty;
@@ -35,7 +35,7 @@ internal sealed class GermanContent
     public int Answer { get; set; }
 }
 
-internal sealed class EnglishContent
+public sealed class EnglishContent
 {
     [JsonPropertyName("Question")]
     public string Question { get; set; } = string.Empty;
