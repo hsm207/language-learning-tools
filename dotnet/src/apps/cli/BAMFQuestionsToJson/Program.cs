@@ -1,4 +1,5 @@
 ﻿using System.CommandLine;
+using System.CommandLine.Parsing;
 using LanguageLearningTools.BAMFQuestionsToJson.Commands;
 using LanguageLearningTools.BAMFQuestionsToJson.Services;
 using LanguageLearningTools.BAMFQuestionsToJson.Factories;
@@ -26,53 +27,28 @@ public class Program
             ILogger logger = new ConsoleLogger();
             IErrorHandler errorHandler = new ErrorHandler(logger);
             ICommandLineConfiguration commandLineConfig = new Configuration.CommandLineConfiguration();
-
-            // Parse command line arguments first
-            var rootCommand = commandLineConfig.BuildRootCommand();
-            var parseResult = rootCommand.Parse(args);
             
-            // Create service factory with parsed configuration
-            IServiceFactory serviceFactory = new ServiceFactory(parseResult);
-
-            return await RunApplicationAsync(args, serviceFactory, commandLineConfig, logger, errorHandler);
+            // Build and configure command line interface
+            var rootCommand = commandLineConfig.BuildRootCommand();
+            
+            try
+            {
+                // Create service factory with parsed configuration
+                IServiceFactory serviceFactory = new ServiceFactory(rootCommand.Parse(args));
+                commandLineConfig.RegisterCommandHandler(rootCommand, serviceFactory);
+                
+                // Execute command
+                return await rootCommand.InvokeAsync(args);
+            }
+            catch (Exception ex)
+            {
+                return errorHandler.HandleException(ex);
+            }
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Unhandled error: {ex.Message}");
             return 99;
-        }
-    }
-
-    /// <summary>
-    /// Runs the application with the provided dependencies.
-    /// </summary>
-    /// <param name="args">Command line arguments.</param>
-    /// <param name="serviceFactory">The service factory to use.</param>
-    /// <param name="commandLineConfig">The command line configuration to use.</param>
-    /// <param name="logger">The logger to use.</param>
-    /// <param name="errorHandler">The error handler to use.</param>
-    /// <returns>Exit code for the application.</returns>
-    public static async Task<int> RunApplicationAsync(
-        string[] args,
-        IServiceFactory serviceFactory,
-        ICommandLineConfiguration commandLineConfig,
-        ILogger logger,
-        IErrorHandler errorHandler)
-    {
-        try
-        {
-            // Build command line interface
-            var rootCommand = commandLineConfig.BuildRootCommand();
-
-            // Register command handler with service factory
-            commandLineConfig.RegisterCommandHandler(rootCommand, serviceFactory);
-
-            // Execute command
-            return await rootCommand.InvokeAsync(args);
-        }
-        catch (Exception ex)
-        {
-            return errorHandler.HandleException(ex);
         }
     }
 }
