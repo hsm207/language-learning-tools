@@ -7,8 +7,10 @@ namespace LanguageLearningTools.BAMFQuestionsToJson.Factories;
 /// Factory class for creating configured instances of the Semantic Kernel.
 /// Handles configuration loading and initialization of the Google AI Gemini model.
 /// </summary>
-public static class KernelFactory
+internal static class KernelFactory
 {
+    private const string ConfigurationMissingError = "Error: GoogleAI configuration is missing.";
+
     /// <summary>
     /// Creates a new instance of the Semantic Kernel configured with Google AI Gemini settings.
     /// Uses ConfigurationService to retrieve model ID and API key.
@@ -38,7 +40,7 @@ public static class KernelFactory
         {
             if (!configService.HasRequiredConfiguration())
             {
-                Console.WriteLine("Error: GoogleAI configuration is missing.");
+                Console.WriteLine(ConfigurationMissingError);
                 return null;
             }
 
@@ -52,9 +54,19 @@ public static class KernelFactory
 
             return kernel;
         }
-        catch (Exception ex)
+        catch (ArgumentException ex)
         {
-            Console.WriteLine($"Error creating kernel: {ex.Message}");
+            Console.WriteLine($"Invalid configuration: {ex.Message}");
+            return null;
+        }
+        catch (InvalidOperationException ex)
+        {
+            Console.WriteLine($"Error initializing kernel: {ex.Message}");
+            return null;
+        }
+        catch (HttpRequestException ex)
+        {
+            Console.WriteLine($"Network error creating kernel: {ex.Message}");
             return null;
         }
     }

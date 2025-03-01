@@ -7,7 +7,7 @@ namespace LanguageLearningTools.BAMFQuestionsToJson.Commands;
 /// <summary>
 /// Command for processing a single image file to extract question data.
 /// </summary>
-public class ProcessImageCommand : CommandBase
+internal sealed class ProcessImageCommand : CommandBase
 {
     private readonly IImageProcessor _imageProcessor;
     private readonly string _imagePath;
@@ -32,11 +32,26 @@ public class ProcessImageCommand : CommandBase
     {
         try
         {
-            return await _imageProcessor.ProcessImage(_imagePath);
+            return await _imageProcessor.ProcessImage(_imagePath).ConfigureAwait(false);
         }
-        catch (Exception ex)
+        catch (InvalidOperationException ex)
         {
-            AnsiConsole.MarkupLine($"[red]Error processing image {Path.GetFileName(_imagePath)}: {ex.Message}[/]");
+            AnsiConsole.MarkupLine($"[red]Processing error for image {Path.GetFileName(_imagePath)}: {ex.Message}[/]");
+            return null;
+        }
+        catch (FileNotFoundException ex)
+        {
+            AnsiConsole.MarkupLine($"[red]Image file not found {Path.GetFileName(_imagePath)}: {ex.Message}[/]");
+            return null;
+        }
+        catch (IOException ex)
+        {
+            AnsiConsole.MarkupLine($"[red]IO error reading image {Path.GetFileName(_imagePath)}: {ex.Message}[/]");
+            return null;
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            AnsiConsole.MarkupLine($"[red]Access denied to image {Path.GetFileName(_imagePath)}: {ex.Message}[/]");
             return null;
         }
     }
@@ -46,6 +61,6 @@ public class ProcessImageCommand : CommandBase
     /// </summary>
     public override async Task ExecuteAsync()
     {
-        await ExecuteWithResultAsync();
+        await ExecuteWithResultAsync().ConfigureAwait(false);
     }
 }

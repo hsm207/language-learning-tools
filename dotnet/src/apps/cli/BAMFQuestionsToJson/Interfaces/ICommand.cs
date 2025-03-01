@@ -3,7 +3,7 @@ namespace LanguageLearningTools.BAMFQuestionsToJson.Interfaces;
 /// <summary>
 /// Defines the contract for all commands in the application.
 /// </summary>
-public interface ICommand
+internal interface ICommand
 {
     /// <summary>
     /// Executes the command asynchronously.

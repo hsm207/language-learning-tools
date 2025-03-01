@@ -5,7 +5,7 @@ namespace LanguageLearningTools.BAMFQuestionsToJson.Commands;
 /// <summary>
 /// Base abstract class for all commands in the application.
 /// </summary>
-public abstract class CommandBase : ICommand
+internal abstract class CommandBase : ICommand
 {
     /// <summary>
     /// Gets the unique identifier for this command instance.

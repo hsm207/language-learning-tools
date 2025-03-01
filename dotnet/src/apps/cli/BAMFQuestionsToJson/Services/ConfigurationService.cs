@@ -7,14 +7,12 @@ namespace LanguageLearningTools.BAMFQuestionsToJson.Services;
 /// <summary>
 /// Service for managing application configuration.
 /// </summary>
-public class ConfigurationService
+internal sealed class ConfigurationService
 {
     private readonly IConfiguration _configuration;
     private readonly string? _googleAiApiKey;
     private readonly string? _googleAiModelId;
     private readonly ParseResult? _parseResult;
-    private readonly Option<string> _apiKeyOption = new Option<string>("--google-ai-api-key", "Google AI API key (overrides value in secret manager)");
-    private readonly Option<string> _modelIdOption = new Option<string>("--google-ai-model-id", "Google AI model ID (overrides value in secret manager)");
 
     /// <summary>
     /// Initializes a new instance of the ConfigurationService class.
@@ -59,19 +57,19 @@ public class ConfigurationService
     /// <summary>
     /// Gets the Google AI model ID from configuration.
     /// </summary>
-    public virtual string? GetGoogleAiModelId() =>
+    public string? GetGoogleAiModelId() =>
         _googleAiModelId ?? _configuration["GoogleAI:ModelId"];
 
     /// <summary>
     /// Gets the Google AI API key from configuration.
     /// </summary>
-    public virtual string? GetGoogleAiApiKey() =>
+    public string? GetGoogleAiApiKey() =>
         _googleAiApiKey ?? _configuration["GoogleAI:ApiKey"];
 
     /// <summary>
     /// Checks if the required Google AI configuration is available.
     /// </summary>
-    public virtual bool HasRequiredConfiguration() =>
+    public bool HasRequiredConfiguration() =>
         !string.IsNullOrEmpty(GetGoogleAiModelId()) &&
         !string.IsNullOrEmpty(GetGoogleAiApiKey());
 }

@@ -7,19 +7,13 @@ namespace LanguageLearningTools.BAMFQuestionsToJson.Interfaces;
 /// <summary>
 /// Interface for a factory that creates service dependencies.
 /// </summary>
-public interface IServiceFactory
+internal interface IServiceFactory
 {
     /// <summary>
     /// Creates a Semantic Kernel instance.
     /// </summary>
     /// <returns>A configured Kernel instance or null if configuration is unavailable.</returns>
     Kernel? CreateKernel();
-
-    /// <summary>
-    /// Creates a SchemaService instance.
-    /// </summary>
-    /// <returns>A new SchemaService instance.</returns>
-    SchemaService CreateSchemaService();
 
     /// <summary>
     /// Creates an ImageProcessor instance.
@@ -60,7 +54,4 @@ public interface IServiceFactory
     /// </summary>
     /// <returns>True if a Google AI model is configured, otherwise false.</returns>
     bool HasGoogleAiModel();
-
-    // Update constructor in interface if you're using default interface implementations
-    // or add new factory methods that use the configuration
 }

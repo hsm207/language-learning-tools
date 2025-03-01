@@ -5,7 +5,7 @@ namespace LanguageLearningTools.BAMFQuestionsToJson.Interfaces;
 /// <summary>
 /// Defines operations for processing image files containing BAMF test questions.
 /// </summary>
-public interface IImageProcessor
+internal interface IImageProcessor
 {
     /// <summary>
     /// Processes an image file containing a BAMF test question.

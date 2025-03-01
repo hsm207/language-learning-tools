@@ -7,7 +7,7 @@ namespace LanguageLearningTools.BAMFQuestionsToJson.Commands;
 /// <summary>
 /// Responsible for invoking commands and tracking their execution.
 /// </summary>
-public class CommandInvoker
+internal sealed class CommandInvoker
 {
     private readonly ConcurrentDictionary<string, ICommand> _activeCommands = new();
 
@@ -18,18 +18,14 @@ public class CommandInvoker
     /// <returns>A task representing the asynchronous operation.</returns>
     public async Task InvokeAsync(ICommand command)
     {
-        if (command == null)
-        {
-            throw new ArgumentNullException(nameof(command));
-        }
+        ArgumentNullException.ThrowIfNull(command);
 
         AnsiConsole.MarkupLine($"[blue]Starting command:[/] {command.Description}");
-
         _activeCommands.TryAdd(command.Id, command);
 
         try
         {
-            await command.ExecuteAsync();
+            await command.ExecuteAsync().ConfigureAwait(false);
             AnsiConsole.MarkupLine($"[green]Command completed:[/] {command.Description}");
         }
         catch (Exception ex)

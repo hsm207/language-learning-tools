@@ -6,7 +6,7 @@ namespace LanguageLearningTools.BAMFQuestionsToJson;
 /// <summary>
 /// Orchestrates the execution of the program by coordinating dependencies and workflow.
 /// </summary>
-public static class ProgramOrchestrator
+internal static class ProgramOrchestrator
 {
     /// <summary>
     /// Executes the file processing command with the specified parameters.
@@ -24,6 +24,10 @@ public static class ProgramOrchestrator
         int? limit,
         int batchSize)
     {
+        ArgumentNullException.ThrowIfNull(serviceFactory);
+        ArgumentException.ThrowIfNullOrEmpty(inputDirectory);
+        ArgumentException.ThrowIfNullOrEmpty(outputFile);
+
         // Create core dependencies
         var commandInvoker = serviceFactory.CreateCommandInvoker();
         var imageProcessor = serviceFactory.CreateImageProcessor();
@@ -37,7 +41,7 @@ public static class ProgramOrchestrator
             batchSize);
 
         // Execute the command
-        await commandInvoker.InvokeAsync(batchCommand);
+        await commandInvoker.InvokeAsync(batchCommand).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -62,6 +66,12 @@ public static class ProgramOrchestrator
     {
         try
         {
+            ArgumentNullException.ThrowIfNull(serviceFactory);
+            ArgumentNullException.ThrowIfNull(logger);
+            ArgumentNullException.ThrowIfNull(errorHandler);
+            ArgumentException.ThrowIfNullOrEmpty(inputDirectory);
+            ArgumentException.ThrowIfNullOrEmpty(outputFile);
+
             logger.LogInformation($"Processing screenshots from: {inputDirectory}");
             logger.LogInformation($"Output will be saved to: {outputFile}");
 
@@ -70,12 +80,28 @@ public static class ProgramOrchestrator
                 inputDirectory,
                 outputFile,
                 limit,
-                batchSize);
+                batchSize).ConfigureAwait(false);
 
             return 0;
         }
-        catch (Exception ex)
+        catch (ArgumentException ex)
         {
+            logger.LogError($"Invalid argument: {ex.Message}");
+            return errorHandler.HandleException(ex);
+        }
+        catch (InvalidOperationException ex)
+        {
+            logger.LogError($"Operation error: {ex.Message}");
+            return errorHandler.HandleException(ex);
+        }
+        catch (IOException ex)
+        {
+            logger.LogError($"IO error: {ex.Message}");
+            return errorHandler.HandleException(ex);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            logger.LogError($"Access denied: {ex.Message}");
             return errorHandler.HandleException(ex);
         }
     }

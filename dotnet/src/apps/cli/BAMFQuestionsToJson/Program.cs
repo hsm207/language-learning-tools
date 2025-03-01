@@ -12,7 +12,7 @@ namespace LanguageLearningTools.BAMFQuestionsToJson;
 /// Main program class that handles command line interface for converting BAMF question screenshots to JSON format.
 /// Uses the Command pattern for processing operations with dependency injection for testability.
 /// </summary>
-public class Program
+internal static class Program
 {
     /// <summary>
     /// Entry point of the application. Initializes and executes the command line interface.
@@ -25,8 +25,8 @@ public class Program
         {
             // Initialize basic services
             ILogger logger = new ConsoleLogger();
-            IErrorHandler errorHandler = new ErrorHandler(logger);
-            ICommandLineConfiguration commandLineConfig = new Configuration.CommandLineConfiguration();
+            ErrorHandler errorHandler = new ErrorHandler(logger);
+            var commandLineConfig = new Configuration.CommandLineConfiguration();
 
             // Build and configure command line interface
             var rootCommand = commandLineConfig.BuildRootCommand();
@@ -34,21 +34,35 @@ public class Program
             try
             {
                 // Create service factory with parsed configuration
-                IServiceFactory serviceFactory = new ServiceFactory(rootCommand.Parse(args));
+                ServiceFactory serviceFactory = new ServiceFactory(rootCommand.Parse(args));
                 commandLineConfig.RegisterCommandHandler(rootCommand, serviceFactory);
 
                 // Execute command
-                return await rootCommand.InvokeAsync(args);
+                return await rootCommand.InvokeAsync(args).ConfigureAwait(false);
             }
-            catch (Exception ex)
+            catch (OperationCanceledException ex)
             {
                 return errorHandler.HandleException(ex);
             }
+            catch (InvalidOperationException ex)
+            {
+                return errorHandler.HandleException(ex);
+            }
+            catch (IOException ex)
+            {
+                await Console.Error.WriteLineAsync($"File operation error: {ex.Message}").ConfigureAwait(false);
+                return 1;
+            }
         }
-        catch (Exception ex)
+        catch (OutOfMemoryException ex)
         {
-            Console.Error.WriteLine($"Unhandled error: {ex.Message}");
-            return 99;
+            await Console.Error.WriteLineAsync($"Critical error - out of memory: {ex.Message}").ConfigureAwait(false);
+            return 2;
+        }
+        catch (ApplicationException ex)
+        {
+            await Console.Error.WriteLineAsync($"Application error: {ex.Message}").ConfigureAwait(false);
+            return 3;
         }
     }
 }

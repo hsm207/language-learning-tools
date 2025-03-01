@@ -6,7 +6,7 @@ namespace LanguageLearningTools.BAMFQuestionsToJson.Commands;
 /// <summary>
 /// Factory for creating command objects based on specific operations.
 /// </summary>
-public static class CommandFactory
+internal static class CommandFactory
 {
     /// <summary>
     /// Creates a composite command that runs multiple commands in sequence.

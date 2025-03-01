@@ -9,7 +9,7 @@ namespace LanguageLearningTools.BAMFQuestionsToJson.Factories;
 /// <summary>
 /// Factory that creates service dependencies for the application.
 /// </summary>
-public class ServiceFactory : IServiceFactory
+internal class ServiceFactory : IServiceFactory
 {
     private readonly ConfigurationService _configurationService;
     private readonly ParseResult? _parseResult;
@@ -64,15 +64,6 @@ public class ServiceFactory : IServiceFactory
     }
 
     /// <summary>
-    /// Creates a SchemaService instance.
-    /// </summary>
-    /// <returns>A new SchemaService instance.</returns>
-    public SchemaService CreateSchemaService()
-    {
-        return new SchemaService();
-    }
-
-    /// <summary>
     /// Creates an ImageProcessor instance.
     /// </summary>
     /// <returns>A configured IImageProcessor instance.</returns>
@@ -83,9 +74,7 @@ public class ServiceFactory : IServiceFactory
         {
             throw new InvalidOperationException("Failed to create Semantic Kernel instance");
         }
-
-        var schemaService = CreateSchemaService();
-        return new ImageProcessor(kernel, schemaService);
+        return new ImageProcessor(kernel);
     }
 
     /// <summary>

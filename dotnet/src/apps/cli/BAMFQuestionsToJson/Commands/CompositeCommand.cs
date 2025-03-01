@@ -6,7 +6,7 @@ namespace LanguageLearningTools.BAMFQuestionsToJson.Commands;
 /// <summary>
 /// A command that executes multiple other commands in sequence.
 /// </summary>
-public class CompositeCommand : CommandBase
+internal class CompositeCommand : CommandBase
 {
     private readonly List<ICommand> _commands;
 
@@ -35,7 +35,7 @@ public class CompositeCommand : CommandBase
         {
             try
             {
-                await command.ExecuteAsync();
+                await command.ExecuteAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
             {

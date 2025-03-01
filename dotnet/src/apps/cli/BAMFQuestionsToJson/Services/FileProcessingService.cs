@@ -8,8 +8,9 @@ namespace LanguageLearningTools.BAMFQuestionsToJson.Services;
 /// <summary>
 /// Service for processing files and generating the output JSON.
 /// </summary>
-public class FileProcessingService
+internal sealed class FileProcessingService
 {
+    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
     private readonly IImageProcessor _imageProcessor;
     private const int DEFAULT_BATCH_SIZE = 100;
 
@@ -38,87 +39,108 @@ public class FileProcessingService
         int batchSize = DEFAULT_BATCH_SIZE,
         int resumeFromIndex = 0)
     {
-        AnsiConsole.MarkupLine($"Processing screenshots from: [green]{inputDirectory}[/]");
-        AnsiConsole.MarkupLine($"Output will be saved to: [green]{outputFilePath}[/]");
-        if (limit.HasValue)
+        try
         {
-            AnsiConsole.MarkupLine($"Processing up to [yellow]{limit}[/] files");
+            AnsiConsole.MarkupLine($"Processing screenshots from: [green]{inputDirectory}[/]");
+            AnsiConsole.MarkupLine($"Output will be saved to: [green]{outputFilePath}[/]");
+            if (limit.HasValue)
+            {
+                AnsiConsole.MarkupLine($"Processing up to [yellow]{limit}[/] files");
+            }
+            AnsiConsole.MarkupLine($"Using batch size of [blue]{batchSize}[/] files");
+            if (resumeFromIndex > 0)
+            {
+                AnsiConsole.MarkupLine($"Resuming from file index [yellow]{resumeFromIndex}[/]");
+            }
+
+            // Get all PNG files sorted by creation time
+            string[] allImageFiles = GetImageFiles(inputDirectory, limit);
+
+            if (allImageFiles.Length == 0)
+            {
+                AnsiConsole.MarkupLine("[red]No image files found to process.[/]");
+                return;
+            }
+
+            AnsiConsole.MarkupLine($"Found [green]{allImageFiles.Length}[/] files to process");
+
+            var questions = await LoadExistingQuestionsAsync(outputFilePath, resumeFromIndex).ConfigureAwait(false);
+            await ProcessImageFilesAsync(allImageFiles, questions, outputFilePath, batchSize, resumeFromIndex).ConfigureAwait(false);
         }
-        AnsiConsole.MarkupLine($"Using batch size of [blue]{batchSize}[/] files");
-        if (resumeFromIndex > 0)
+        catch (DirectoryNotFoundException ex)
         {
-            AnsiConsole.MarkupLine($"Resuming from file index [yellow]{resumeFromIndex}[/]");
+            AnsiConsole.MarkupLine($"[red]Directory not found: {ex.Message}[/]");
+            throw;
         }
-
-        // Get all PNG files sorted by creation time
-        string[] allImageFiles = GetImageFiles(inputDirectory, limit);
-
-        if (allImageFiles.Length == 0)
+        catch (UnauthorizedAccessException ex)
         {
-            AnsiConsole.MarkupLine("[red]No image files found to process.[/]");
-            return;
+            AnsiConsole.MarkupLine($"[red]Access denied: {ex.Message}[/]");
+            throw;
         }
+        catch (IOException ex)
+        {
+            AnsiConsole.MarkupLine($"[red]IO error: {ex.Message}[/]");
+            throw;
+        }
+    }
 
-        AnsiConsole.MarkupLine($"Found [green]{allImageFiles.Length}[/] files to process");
-
-        // Load existing questions if resuming and the output file exists
+    public static async Task<List<BamfQuestion>> LoadExistingQuestionsAsync(string outputFilePath, int resumeFromIndex)
+    {
         var questions = new List<BamfQuestion>();
         if (resumeFromIndex > 0 && File.Exists(outputFilePath))
         {
             try
             {
-                string existingJson = await File.ReadAllTextAsync(outputFilePath);
-                questions = JsonSerializer.Deserialize<List<BamfQuestion>>(existingJson) ?? new List<BamfQuestion>();
+                string existingJson = await File.ReadAllTextAsync(outputFilePath).ConfigureAwait(false);
+                questions = JsonSerializer.Deserialize<List<BamfQuestion>>(existingJson, JsonOptions) ?? new List<BamfQuestion>();
                 AnsiConsole.MarkupLine($"Loaded [green]{questions.Count}[/] existing questions from output file");
             }
-            catch (Exception ex)
+            catch (JsonException ex)
             {
-                AnsiConsole.MarkupLine($"[red]Error loading existing questions: {ex.Message}[/]");
+                AnsiConsole.MarkupLine($"[red]Error parsing existing questions: {ex.Message}[/]");
+                AnsiConsole.MarkupLine("Starting with empty question list");
+            }
+            catch (IOException ex)
+            {
+                AnsiConsole.MarkupLine($"[red]Error reading existing questions file: {ex.Message}[/]");
                 AnsiConsole.MarkupLine("Starting with empty question list");
             }
         }
+        return questions;
+    }
 
-        // Process files in batches
+    private async Task ProcessImageFilesAsync(string[] allImageFiles, List<BamfQuestion> questions, string outputFilePath, int batchSize, int resumeFromIndex)
+    {
         int totalProcessed = Math.Min(resumeFromIndex, questions.Count);
         int successCount = totalProcessed;
         int failCount = 0;
+        var filesRemaining = allImageFiles.Length - resumeFromIndex;
 
-        // Define the progress data
-        var totalFiles = allImageFiles.Length;
-        var startIndex = resumeFromIndex;
-        var filesRemaining = totalFiles - startIndex;
-
-        // Process files with progress tracking
         await AnsiConsole.Progress()
-            .AutoClear(false)  // Do not remove the task list when done
+            .AutoClear(false)
             .Columns(new ProgressColumn[]
             {
-                new TaskDescriptionColumn(),    // Task description
-                new ProgressBarColumn(),        // Progress bar
-                new PercentageColumn(),         // Percentage
-                new RemainingTimeColumn(),      // Remaining time
-                new SpinnerColumn(),            // Spinner
+                new TaskDescriptionColumn(),
+                new ProgressBarColumn(),
+                new PercentageColumn(),
+                new RemainingTimeColumn(),
+                new SpinnerColumn(),
             })
             .StartAsync(async ctx =>
             {
-                // Define task
                 var progressTask = ctx.AddTask($"[green]Processing Files[/]", maxValue: filesRemaining);
-
-                // If resuming, update initial progress
                 if (resumeFromIndex > 0)
                 {
                     progressTask.Description = $"[green]Processing Files[/] (Success: {successCount}, Failed: {0})";
                 }
 
-                // Process each file
                 for (int i = resumeFromIndex; i < allImageFiles.Length; i++)
                 {
                     try
                     {
-                        // Update progress description with current stats
                         progressTask.Description = $"[green]Processing...[/] (Success: {successCount}, Failed: {failCount})";
-
-                        var question = await _imageProcessor.ProcessImage(allImageFiles[i]);
+                        var question = await _imageProcessor.ProcessImage(allImageFiles[i]).ConfigureAwait(false);
+                        
                         if (question != null)
                         {
                             questions.Add(question);
@@ -130,29 +152,32 @@ public class FileProcessingService
                             failCount++;
                         }
                     }
-                    catch (Exception ex)
+                    catch (InvalidOperationException ex)
                     {
-                        AnsiConsole.MarkupLine($"[red]Error processing file {Path.GetFileName(allImageFiles[i])}: {ex.Message}[/]");
+                        AnsiConsole.MarkupLine($"[red]Processing error for file {Path.GetFileName(allImageFiles[i])}: {ex.Message}[/]");
+                        failCount++;
+                    }
+                    catch (IOException ex)
+                    {
+                        AnsiConsole.MarkupLine($"[red]IO error processing file {Path.GetFileName(allImageFiles[i])}: {ex.Message}[/]");
                         failCount++;
                     }
 
                     totalProcessed++;
                     progressTask.Increment(1);
 
-                    // Save checkpoint after each batch
                     if (totalProcessed % batchSize == 0 || i == allImageFiles.Length - 1)
                     {
-                        // Pause the task momentarily to show the checkpoint message
                         ctx.Refresh();
                         AnsiConsole.MarkupLine($"[blue]Saving checkpoint at file index {i}...[/]");
-                        await SaveQuestionsToJsonAsync(questions, outputFilePath);
+                        await SaveQuestionsToJsonAsync(questions, outputFilePath).ConfigureAwait(false);
                     }
                 }
-            });
 
-        // Final summary
-        AnsiConsole.MarkupLine($"[green]Processing complete![/]");
-        AnsiConsole.MarkupLine($"[bold]Summary:[/] Total files: {allImageFiles.Length}, Success: {successCount}, Failed: {failCount}");
+                // Final summary
+                AnsiConsole.MarkupLine($"[green]Processing complete![/]");
+                AnsiConsole.MarkupLine($"[bold]Summary:[/] Total files: {allImageFiles.Length}, Success: {successCount}, Failed: {failCount}");
+            }).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -182,27 +207,48 @@ public class FileProcessingService
     /// <param name="outputPath">The path to save the JSON file to.</param>
     private static async Task SaveQuestionsToJsonAsync(List<BamfQuestion> questions, string outputPath)
     {
-        // Create backup of existing file if it exists
-        if (File.Exists(outputPath))
+        try
         {
-            string backupPath = $"{outputPath}.bak";
-            File.Copy(outputPath, backupPath, true);
-            AnsiConsole.MarkupLine($"Created backup at [blue]{backupPath}[/]");
+            // Create backup of existing file if it exists
+            if (File.Exists(outputPath))
+            {
+                string backupPath = $"{outputPath}.bak";
+                File.Copy(outputPath, backupPath, true);
+                AnsiConsole.MarkupLine($"Created backup at [blue]{backupPath}[/]");
+            }
+
+            // Write to a temporary file first to prevent corruption if the process is interrupted
+            string tempPath = $"{outputPath}.temp";
+            await File.WriteAllTextAsync(tempPath, JsonSerializer.Serialize(questions, JsonOptions)).ConfigureAwait(false);
+
+            // Replace the original file with the temporary file
+            if (File.Exists(outputPath))
+            {
+                File.Delete(outputPath);
+            }
+            File.Move(tempPath, outputPath);
+            AnsiConsole.MarkupLine($"Saved [green]{questions.Count}[/] questions to [blue]{outputPath}[/]");
         }
-
-        var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
-
-        // Write to a temporary file first to prevent corruption if the process is interrupted
-        string tempPath = $"{outputPath}.temp";
-        await File.WriteAllTextAsync(tempPath, JsonSerializer.Serialize(questions, jsonOptions));
-
-        // Replace the original file with the temporary file
-        if (File.Exists(outputPath))
+        catch (UnauthorizedAccessException ex)
         {
-            File.Delete(outputPath);
+            AnsiConsole.MarkupLine($"[red]Access denied while saving questions: {ex.Message}[/]");
+            throw;
         }
-        File.Move(tempPath, outputPath);
-
-        AnsiConsole.MarkupLine($"Saved [green]{questions.Count}[/] questions to [blue]{outputPath}[/]");
+        catch (IOException ex)
+        {
+            AnsiConsole.MarkupLine($"[red]IO error while saving questions: {ex.Message}[/]");
+            if (File.Exists($"{outputPath}.temp"))
+            {
+                try
+                {
+                    File.Delete($"{outputPath}.temp");
+                }
+                catch (IOException deleteEx)
+                {
+                    AnsiConsole.MarkupLine($"[red]Failed to clean up temporary file: {deleteEx.Message}[/]");
+                }
+            }
+            throw;
+        }
     }
 }

@@ -5,7 +5,7 @@ namespace LanguageLearningTools.BAMFQuestionsToJson.Services;
 /// <summary>
 /// Implementation of IErrorHandler that handles exceptions and logs errors.
 /// </summary>
-public class ErrorHandler : IErrorHandler
+internal class ErrorHandler : IErrorHandler
 {
     private readonly ILogger _logger;
 

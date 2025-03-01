@@ -2,14 +2,16 @@ using LanguageLearningTools.BAMFQuestionsToJson.Interfaces;
 using LanguageLearningTools.BAMFQuestionsToJson.Models;
 using Spectre.Console;
 using System.Text.Json;
+using System.Security;
 
 namespace LanguageLearningTools.BAMFQuestionsToJson.Commands;
 
 /// <summary>
 /// Command for processing multiple image files in a batch operation.
 /// </summary>
-public class ProcessFileBatchCommand : CommandBase
+internal sealed class ProcessFileBatchCommand : CommandBase
 {
+    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
     private readonly IImageProcessor _imageProcessor;
     private readonly string _inputDirectory;
     private readonly string _outputFilePath;
@@ -114,7 +116,7 @@ public class ProcessFileBatchCommand : CommandBase
 
                     // Create a command for processing this specific image
                     var command = new ProcessImageCommand(_imageProcessor, allImageFiles[i]);
-                    var question = await command.ExecuteWithResultAsync();
+                    var question = await command.ExecuteWithResultAsync().ConfigureAwait(false);
 
                     if (question != null)
                     {
@@ -138,7 +140,7 @@ public class ProcessFileBatchCommand : CommandBase
                         ctx.Refresh();
                         AnsiConsole.MarkupLine($"[blue]Saving checkpoint at file index {i}...[/]");
 
-                        await SaveQuestionsAsync(questions, _outputFilePath);
+                        await SaveQuestionsAsync(questions, _outputFilePath).ConfigureAwait(false);
 
                         // Move successfully processed files to the processed folder
                         foreach (string processedFile in successfullyProcessedFiles)
@@ -151,7 +153,7 @@ public class ProcessFileBatchCommand : CommandBase
                                 // If a file with the same name exists in the processed folder, add a timestamp
                                 if (File.Exists(destPath))
                                 {
-                                    string timestamp = DateTime.Now.ToString("yyyyMMddHHmmss");
+                                    string timestamp = DateTime.Now.ToString("yyyyMMddHHmmss", System.Globalization.CultureInfo.InvariantCulture);
                                     string fileNameWithoutExt = Path.GetFileNameWithoutExtension(processedFileName);
                                     string extension = Path.GetExtension(processedFileName);
                                     destPath = Path.Combine(processedFolder, $"{fileNameWithoutExt}_{timestamp}{extension}");
@@ -160,9 +162,17 @@ public class ProcessFileBatchCommand : CommandBase
                                 File.Move(processedFile, destPath);
                                 AnsiConsole.MarkupLine($"Moved [green]{processedFileName}[/] to processed folder");
                             }
-                            catch (Exception ex)
+                            catch (IOException ex)
                             {
                                 AnsiConsole.MarkupLine($"[red]Error moving file {Path.GetFileName(processedFile)}: {ex.Message}[/]");
+                            }
+                            catch (UnauthorizedAccessException ex)
+                            {
+                                AnsiConsole.MarkupLine($"[red]Access denied when moving file {Path.GetFileName(processedFile)}: {ex.Message}[/]");
+                            }
+                            catch (SecurityException ex)
+                            {
+                                AnsiConsole.MarkupLine($"[red]Security error moving file {Path.GetFileName(processedFile)}: {ex.Message}[/]");
                             }
                         }
 
@@ -170,7 +180,7 @@ public class ProcessFileBatchCommand : CommandBase
                         successfullyProcessedFiles.Clear();
                     }
                 }
-            });
+            }).ConfigureAwait(false);
 
         // Final summary
         AnsiConsole.MarkupLine($"[green]Processing complete![/]");
@@ -184,7 +194,7 @@ public class ProcessFileBatchCommand : CommandBase
     private static string[] GetImageFiles(string directory, int? limit)
     {
         var files = Directory.GetFiles(directory, "*.png")
-            .Where(f => !f.Contains(Path.Combine(directory, "processed"))) // Exclude files from processed folder
+            .Where(f => !f.Contains(Path.Combine(directory, "processed"), StringComparison.OrdinalIgnoreCase))
             .OrderBy(f => File.GetCreationTime(f))
             .ToArray();
 
@@ -201,7 +211,6 @@ public class ProcessFileBatchCommand : CommandBase
     /// </summary>
     private static async Task SaveQuestionsAsync(List<BamfQuestion> newQuestions, string outputFilePath)
     {
-        var options = new JsonSerializerOptions { WriteIndented = true };
         List<BamfQuestion> allQuestions = new();
 
         // Read existing questions if file exists
@@ -210,13 +219,17 @@ public class ProcessFileBatchCommand : CommandBase
             try
             {
                 using var existingFileStream = File.OpenRead(outputFilePath);
-                var existingQuestions = await JsonSerializer.DeserializeAsync<List<BamfQuestion>>(existingFileStream, options);
+                var existingQuestions = await JsonSerializer.DeserializeAsync<List<BamfQuestion>>(existingFileStream, JsonOptions).ConfigureAwait(false);
                 if (existingQuestions != null)
                 {
                     allQuestions.AddRange(existingQuestions);
                 }
             }
-            catch (Exception ex)
+            catch (JsonException ex)
+            {
+                AnsiConsole.MarkupLine($"[yellow]Warning: Could not parse existing questions file: {ex.Message}[/]");
+            }
+            catch (IOException ex)
             {
                 AnsiConsole.MarkupLine($"[yellow]Warning: Could not read existing questions file: {ex.Message}[/]");
             }
@@ -233,16 +246,45 @@ public class ProcessFileBatchCommand : CommandBase
 
         // Create a temporary file for writing
         var tempFilePath = outputFilePath + ".tmp";
-        await using (var stream = File.Create(tempFilePath))
+        try
         {
-            await JsonSerializer.SerializeAsync(stream, allQuestions, options);
-        }
+            using (var stream = File.Create(tempFilePath))
+            {
+                await JsonSerializer.SerializeAsync(stream, allQuestions, JsonOptions).ConfigureAwait(false);
+                await stream.FlushAsync().ConfigureAwait(false);
+            }
 
-        // Replace the original file with the temporary file
-        if (File.Exists(outputFilePath))
-        {
-            File.Delete(outputFilePath);
+            // Replace the original file with the temporary file
+            if (File.Exists(outputFilePath))
+            {
+                File.Delete(outputFilePath);
+            }
+            File.Move(tempFilePath, outputFilePath);
         }
-        File.Move(tempFilePath, outputFilePath);
+        catch (IOException ex)
+        {
+            AnsiConsole.MarkupLine($"[red]Error saving questions file: {ex.Message}[/]");
+            if (File.Exists(tempFilePath))
+            {
+                try 
+                { 
+                    File.Delete(tempFilePath); 
+                } 
+                catch (IOException deleteEx) 
+                { 
+                    AnsiConsole.MarkupLine($"[red]Failed to clean up temporary file: {deleteEx.Message}[/]"); 
+                }
+                catch (UnauthorizedAccessException deleteEx)
+                {
+                    AnsiConsole.MarkupLine($"[red]Access denied while cleaning up temporary file: {deleteEx.Message}[/]");
+                }
+            }
+            throw;
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            AnsiConsole.MarkupLine($"[red]Access denied while saving questions file: {ex.Message}[/]");
+            throw;
+        }
     }
 }

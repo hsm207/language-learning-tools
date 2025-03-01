@@ -5,7 +5,7 @@ namespace LanguageLearningTools.BAMFQuestionsToJson.Services;
 /// <summary>
 /// Service for handling JSON schema operations.
 /// </summary>
-public class SchemaService
+internal sealed class SchemaService
 {
     /// <summary>
     /// Cleans a JSON schema by removing additionalProperties fields and other adjustments 
@@ -13,12 +13,11 @@ public class SchemaService
     /// </summary>
     /// <typeparam name="T">The type to create a schema for.</typeparam>
     /// <returns>A cleaned JsonElement representing the schema.</returns>
-    public JsonElement CreateAndCleanSchema<T>()
+    public static JsonElement CreateAndCleanSchema<T>()
     {
         var schema = Microsoft.Extensions.AI.AIJsonUtilities.CreateJsonSchema(typeof(T));
         var schemaJson = JsonSerializer.Serialize(schema);
         var schemaDoc = JsonDocument.Parse(schemaJson);
-
         return CleanSchema(schemaDoc.RootElement);
     }
 
@@ -35,9 +34,9 @@ public class SchemaService
         var mutableObj = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(element.ToString())!;
         mutableObj.Remove("additionalProperties");
 
-        if (mutableObj.ContainsKey("properties"))
+        if (mutableObj.TryGetValue("properties", out var propertiesElement))
         {
-            var properties = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(mutableObj["properties"].ToString())!;
+            var properties = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(propertiesElement.ToString())!;
             var cleanedProperties = properties.ToDictionary(
                 kvp => kvp.Key,
                 kvp => CleanSchema(kvp.Value));

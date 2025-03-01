@@ -3,7 +3,7 @@ namespace LanguageLearningTools.BAMFQuestionsToJson.Interfaces;
 /// <summary>
 /// Interface for logging messages at different severity levels.
 /// </summary>
-public interface ILogger
+internal interface ILogger
 {
     /// <summary>
     /// Logs an informational message.

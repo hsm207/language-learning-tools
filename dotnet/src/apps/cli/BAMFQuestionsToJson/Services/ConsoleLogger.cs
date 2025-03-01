@@ -6,7 +6,7 @@ namespace LanguageLearningTools.BAMFQuestionsToJson.Services;
 /// <summary>
 /// Implementation of ILogger that logs messages to the console using Spectre.Console.
 /// </summary>
-public class ConsoleLogger : ILogger
+internal class ConsoleLogger : ILogger
 {
     /// <summary>
     /// Logs an informational message.

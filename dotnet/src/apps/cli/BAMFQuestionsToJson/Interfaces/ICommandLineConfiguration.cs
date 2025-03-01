@@ -5,7 +5,7 @@ namespace LanguageLearningTools.BAMFQuestionsToJson.Interfaces;
 /// <summary>
 /// Interface for configuring command line options and commands.
 /// </summary>
-public interface ICommandLineConfiguration
+internal interface ICommandLineConfiguration
 {
     /// <summary>
     /// Creates and configures a root command with all necessary options.

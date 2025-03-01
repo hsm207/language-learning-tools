@@ -12,21 +12,18 @@ namespace LanguageLearningTools.BAMFQuestionsToJson.Services;
 /// Processes image files containing BAMF test questions using the Semantic Kernel chat completion service.
 /// Extracts question content from images using AI-powered image recognition.
 /// </summary>
-public sealed class ImageProcessor : IImageProcessor
+internal sealed class ImageProcessor : IImageProcessor
 {
     private readonly Kernel _kernel;
-    private readonly SchemaService _schemaService;
 
     /// <summary>
     /// Initializes a new instance of the ImageProcessor class.
     /// </summary>
     /// <param name="kernel">The Semantic Kernel instance used for AI operations.</param>
-    /// <param name="schemaService">The service used for schema operations.</param>
     /// <exception cref="ArgumentNullException">Thrown when kernel is null.</exception>
-    public ImageProcessor(Kernel kernel, SchemaService schemaService)
+    public ImageProcessor(Kernel kernel)
     {
         _kernel = kernel ?? throw new ArgumentNullException(nameof(kernel));
-        _schemaService = schemaService ?? throw new ArgumentNullException(nameof(schemaService));
     }
 
     /// <summary>
@@ -36,41 +33,57 @@ public sealed class ImageProcessor : IImageProcessor
     /// <returns>A BamfQuestion object containing the extracted question data, or null if processing fails.</returns>
     public async Task<BamfQuestion?> ProcessImage(string imageFile)
     {
-#pragma warning disable SKEXP0070 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
-        var cleanSchema = _schemaService.CreateAndCleanSchema<BamfQuestion>();
-
-        var executionSettings = new GeminiPromptExecutionSettings()
+        try
         {
-            ResponseMimeType = "application/json",
-            ResponseSchema = cleanSchema,
-            Temperature = 1.0,
-            TopP = 0.95,
-            TopK = 40,
-            MaxTokens = 8192,
-        };
-#pragma warning restore SKEXP0070 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
-        var chatHistory = new ChatHistory();
-        var chatCompletionService = _kernel.GetRequiredService<IChatCompletionService>();
+#pragma warning disable SKEXP0070 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+            var cleanSchema = SchemaService.CreateAndCleanSchema<BamfQuestion>();
 
-        // Read the image file and convert to binary data
-        var imageData = await ReadImageFile(imageFile);
+            var executionSettings = new GeminiPromptExecutionSettings()
+            {
+                ResponseMimeType = "application/json",
+                ResponseSchema = cleanSchema,
+                Temperature = 1.0,
+                TopP = 0.95,
+                TopK = 40,
+                MaxTokens = 8192,
+            };
+#pragma warning restore SKEXP0070
 
-        var prompt = GetPromptText();
-        chatHistory.AddUserMessage(
-        [
-            new TextContent(prompt),
-            new ImageContent(imageData, "image/jpeg"),
-        ]);
+            var chatHistory = new ChatHistory();
+            var chatCompletionService = _kernel.GetRequiredService<IChatCompletionService>();
 
-        var reply = await chatCompletionService.GetChatMessageContentAsync(chatHistory, executionSettings);
+            // Read the image file and convert to binary data
+            var imageData = await ReadImageFile(imageFile).ConfigureAwait(false);
 
-        if (string.IsNullOrEmpty(reply.Content))
-            return null;
+            var prompt = GetPromptText();
+            chatHistory.AddUserMessage(
+            [
+                new TextContent(prompt),
+                new ImageContent(imageData, "image/jpeg"),
+            ]);
 
-        // Add a delay before returning
-        await Task.Delay(TimeSpan.FromSeconds(12));
+            var reply = await chatCompletionService.GetChatMessageContentAsync(chatHistory, executionSettings).ConfigureAwait(false);
 
-        return JsonSerializer.Deserialize<BamfQuestion>(reply.Content);
+            if (string.IsNullOrEmpty(reply.Content))
+                return null;
+
+            // Add a delay before returning
+            await Task.Delay(TimeSpan.FromSeconds(12)).ConfigureAwait(false);
+
+            return JsonSerializer.Deserialize<BamfQuestion>(reply.Content);
+        }
+        catch (JsonException ex)
+        {
+            throw new InvalidOperationException($"Failed to parse AI response for image {imageFile}: {ex.Message}", ex);
+        }
+        catch (InvalidOperationException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Failed to process image {imageFile}: {ex.Message}", ex);
+        }
     }
 
     /// <summary>
@@ -80,10 +93,26 @@ public sealed class ImageProcessor : IImageProcessor
     /// <returns>The image file as a byte array.</returns>
     private static async Task<byte[]> ReadImageFile(string imageFile)
     {
-        await using var stream = File.OpenRead(imageFile);
-        using var memoryStream = new MemoryStream();
-        await stream.CopyToAsync(memoryStream);
-        return memoryStream.ToArray();
+        try
+        {
+            if (!File.Exists(imageFile))
+            {
+                throw new FileNotFoundException($"Image file not found: {imageFile}");
+            }
+
+            using var stream = File.OpenRead(imageFile);
+            using var memoryStream = new MemoryStream();
+            await stream.CopyToAsync(memoryStream).ConfigureAwait(false);
+            return memoryStream.ToArray();
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            throw new UnauthorizedAccessException($"Access denied to image file {imageFile}: {ex.Message}", ex);
+        }
+        catch (IOException ex)
+        {
+            throw new IOException($"IO error reading image file {imageFile}: {ex.Message}", ex);
+        }
     }
 
     /// <summary>

@@ -6,7 +6,7 @@ namespace LanguageLearningTools.BAMFQuestionsToJson.Configuration;
 /// <summary>
 /// Configures command line options and commands.
 /// </summary>
-public class CommandLineConfiguration : ICommandLineConfiguration
+internal class CommandLineConfiguration : ICommandLineConfiguration
 {
     /// <summary>
     /// Creates and configures a root command with all necessary options.
@@ -82,7 +82,7 @@ public class CommandLineConfiguration : ICommandLineConfiguration
                     input,
                     output,
                     limit,
-                    batchSize);
+                    batchSize).ConfigureAwait(false);
             },
             rootCommand.Options.OfType<Option<string>>().First(o => o.Name == "input"),
             rootCommand.Options.OfType<Option<string>>().First(o => o.Name == "output"),

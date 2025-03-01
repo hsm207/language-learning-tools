@@ -3,7 +3,7 @@ namespace LanguageLearningTools.BAMFQuestionsToJson.Interfaces;
 /// <summary>
 /// Interface for handling and reporting errors.
 /// </summary>
-public interface IErrorHandler
+internal interface IErrorHandler
 {
     /// <summary>
     /// Handles an exception that occurred during program execution.
