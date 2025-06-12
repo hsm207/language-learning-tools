@@ -13,7 +13,7 @@ internal class BAMFScraperConfiguration
     public int QuestionDelayMs { get; set; } = 5000;
     public string ScreenshotDirectory { get; set; } = "screenshots";
     public string StateDropdownSelector { get; set; } = "#P1_BUL_ID";
-    public string QuestionElementSelector { get; set; } = "#R57608719341524241";
+    public string QuestionElementSelector { get; set; } = "#R59645205843215396";
     public string NextQuestionButtonText { get; set; } = "nächste Aufgabe >";
     public string StartButtonText { get; set; } = "Zum Fragenkatalog";
     public int TotalQuestions { get; set; } = 310;
