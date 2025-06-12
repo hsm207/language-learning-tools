@@ -35,6 +35,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LanguageLearningTools.Infra
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LanguageLearningTools.Infrastructure.IntegrationTests", "tests\LanguageLearningTools.Infrastructure.IntegrationTests\LanguageLearningTools.Infrastructure.IntegrationTests.csproj", "{EE07C183-9D44-4733-8951-D306277FA190}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SubtitleToJson", "src\apps\cli\SubtitleToJson\SubtitleToJson.csproj", "{A1B2C3D4-0000-0000-0000-000000000001}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SubtitleToJson.Tests", "tests\SubtitleToJson.Tests\SubtitleToJson.Tests.csproj", "{A1B2C3D4-0000-0000-0000-000000000002}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
