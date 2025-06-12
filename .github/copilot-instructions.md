@@ -13,6 +13,7 @@
   - Follow SOLID principles and keep methods/classes small and focused.
   - Use async/await for asynchronous code.
   - Prefer immutability and value objects where appropriate.
+- **After making any changes, always run the tests to verify that nothing is broken.**
 
 ## Documentation Guidelines
 
