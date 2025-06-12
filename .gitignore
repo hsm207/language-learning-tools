@@ -62,3 +62,6 @@ artifacts/
 # Code coverage results
 *.coverage
 *.coveragexml
+
+# MacOS specific files
+.DS_Store
