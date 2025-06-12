@@ -14,6 +14,13 @@
   - Use async/await for asynchronous code.
   - Prefer immutability and value objects where appropriate.
 - **After making any changes, always run the tests to verify that nothing is broken.**
+- For this project, if some projects have package downgrade errors, run only the unaffected test projects with:
+    ```sh
+    dotnet test ./dotnet/tests/LanguageLearningTools.Domain.Tests/LanguageLearningTools.Domain.Tests.csproj
+    dotnet test ./dotnet/tests/LanguageLearningTools.Infrastructure.IntegrationTests/LanguageLearningTools.Infrastructure.IntegrationTests.csproj
+    dotnet test ./dotnet/tests/LanguageLearningTools.Infrastructure.Tests/LanguageLearningTools.Infrastructure.Tests.csproj
+    dotnet test ./dotnet/tests/SubtitleToJson.Tests/SubtitleToJson.Tests.csproj
+    ```
 
 ## Documentation Guidelines
 
