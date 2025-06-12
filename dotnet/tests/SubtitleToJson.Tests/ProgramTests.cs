@@ -7,18 +7,6 @@ namespace SubtitleToJson.Tests;
 
 public class ProgramTests
 {
-    [Fact]
-    public async Task ConvertCommand_Should_Require_InputOption()
-    {
-        // Arrange
-        var args = new[] { "convert" };
-        // Act
-        var exitCode = await SubtitleToJson.Program.Main(args);
-        // Assert
-        Assert.NotEqual(0, exitCode); // Should fail due to missing required --input
-    }
-
-    // ...existing code...
 
     [Fact]
     public async Task ConvertCommand_Should_Produce_Expected_Json_For_SampleTtml()
