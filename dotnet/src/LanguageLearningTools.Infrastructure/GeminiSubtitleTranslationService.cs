@@ -19,17 +19,22 @@ namespace LanguageLearningTools.Infrastructure
         private readonly Kernel _kernel;
         private readonly double _temperature;
         private readonly ILogger _logger;
+        private readonly TimeSpan _requestDelay;
+        private static readonly SemaphoreSlim _rateLimitSemaphore = new(1, 1);
+        private static DateTime _lastRequestTime = DateTime.MinValue;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GeminiSubtitleTranslationService"/> class.
         /// </summary>
         /// <param name="kernel">The Semantic Kernel instance configured for Gemini.</param>
         /// <param name="temperature">The temperature for Gemini completions (0 = deterministic, 1 = most random). Default is 0.2.</param>
+        /// <param name="requestDelay">The minimum delay between API requests to avoid rate limiting. Default is 7.5 seconds for 8 RPM.</param>
         /// <param name="loggerFactory">The <see cref="ILoggerFactory"/> to use for logging. If null, no logging will be performed.</param>
-        public GeminiSubtitleTranslationService(Kernel kernel, double temperature = 0.2, ILoggerFactory? loggerFactory = null)
+        public GeminiSubtitleTranslationService(Kernel kernel, double temperature = 0.2, TimeSpan? requestDelay = null, ILoggerFactory? loggerFactory = null)
         {
             _kernel = kernel ?? throw new ArgumentNullException(nameof(kernel));
             _temperature = temperature;
+            _requestDelay = requestDelay ?? TimeSpan.FromSeconds(7.5); // Default 7.5 seconds for 8 RPM
             _logger = loggerFactory?.CreateLogger<GeminiSubtitleTranslationService>() ?? NullLogger<GeminiSubtitleTranslationService>.Instance;
         }
 
@@ -96,6 +101,9 @@ namespace LanguageLearningTools.Infrastructure
                             attempt, timespan.TotalSeconds, exception.Message);
                     });
 
+            // Apply rate limiting to be polite to the Gemini API
+            await ApplyRateLimitingAsync();
+
             var output = await retryPolicy.ExecuteAsync(async () =>
             {
                 var promptFunction = _kernel.CreateFunctionFromPrompt(promptConfig);
@@ -106,11 +114,29 @@ namespace LanguageLearningTools.Infrastructure
             });
 
             var geminiResponse = System.Text.Json.JsonSerializer.Deserialize<GeminiSubtitleBatchResponse>(output);
-            if (geminiResponse?.TranslatedLines == null || geminiResponse.TranslatedLines.Count != request.LinesToTranslate.Count)
+            if (geminiResponse?.TranslatedLines == null)
             {
-                _logger.LogError("Translation failed: Expected {ExpectedCount} translations, got {ActualCount}",
-                    request.LinesToTranslate.Count, geminiResponse?.TranslatedLines?.Count ?? 0);
-                throw new InvalidOperationException($"Expected {request.LinesToTranslate.Count} translations, got {geminiResponse?.TranslatedLines?.Count ?? 0}.");
+                _logger.LogError("Translation failed: No translations received from API");
+                throw new InvalidOperationException("No translations received from API.");
+            }
+
+            var expectedCount = request.LinesToTranslate.Count;
+            var actualCount = geminiResponse.TranslatedLines.Count;
+            
+            if (actualCount != expectedCount)
+            {
+                _logger.LogError("Translation failed: Expected {ExpectedCount} translations, got {ActualCount}. " +
+                    "Each input line must produce exactly one translation. API may have merged or skipped lines.",
+                    expectedCount, actualCount);
+                    
+                // Log the actual response for debugging
+                _logger.LogDebug("Expected lines: {ExpectedLines}", 
+                    string.Join(", ", request.LinesToTranslate.Select(l => $"'{l.Text}'")));
+                _logger.LogDebug("Received translations: {ReceivedTranslations}", 
+                    string.Join(", ", geminiResponse.TranslatedLines.Select(l => $"'{l.Text}' -> '{l.TranslatedText}'")));
+                    
+                throw new InvalidOperationException($"Expected {expectedCount} translations, got {actualCount}. " +
+                    "Each input line must produce exactly one translation.");
             }
 
             _logger.LogInformation("Translation batch completed successfully with {TranslatedCount} lines",
@@ -122,6 +148,30 @@ namespace LanguageLearningTools.Infrastructure
                 TranslatedLines = geminiResponse.TranslatedLines.ConvertAll(GeminiSubtitleLineMapper.FromGeminiDto)
             };
             return response;
+        }
+
+        /// <summary>
+        /// Applies rate limiting to ensure we don't overwhelm the Gemini API with requests.
+        /// Uses a semaphore to ensure only one request at a time and enforces a minimum delay between requests.
+        /// </summary>
+        private async Task ApplyRateLimitingAsync()
+        {
+            await _rateLimitSemaphore.WaitAsync();
+            try
+            {
+                var timeSinceLastRequest = DateTime.UtcNow - _lastRequestTime;
+                if (timeSinceLastRequest < _requestDelay)
+                {
+                    var delayNeeded = _requestDelay - timeSinceLastRequest;
+                    _logger.LogDebug("Rate limiting: waiting {DelayMs}ms before next API request", delayNeeded.TotalMilliseconds);
+                    await Task.Delay(delayNeeded);
+                }
+                _lastRequestTime = DateTime.UtcNow;
+            }
+            finally
+            {
+                _rateLimitSemaphore.Release();
+            }
         }
     }
 }

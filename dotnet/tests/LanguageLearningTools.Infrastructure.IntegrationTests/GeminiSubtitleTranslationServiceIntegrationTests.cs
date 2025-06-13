@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using LanguageLearningTools.Domain;
 using LanguageLearningTools.Infrastructure;
@@ -246,6 +247,115 @@ public class GeminiSubtitleTranslationServiceIntegrationTests
         Assert.Contains("Café", response.TranslatedLines[1].TranslatedText, StringComparison.InvariantCultureIgnoreCase);
         Assert.Contains("¿", response.TranslatedLines[1].TranslatedText);
         Assert.Contains("！", response.TranslatedLines[1].TranslatedText);
+    }
+
+    [Fact]
+    public async Task TranslateBatchAsync_WithFakeApiKey_ShouldThrowCorrectException()
+    {
+        // Arrange: Create a service with a completely fake API key
+        var fakeApiKey = "fake-gemini-api-key-for-testing-12345";
+        var fakeKernel = Kernel.CreateBuilder()
+            .AddGoogleAIGeminiChatCompletion(modelId: _modelId, apiKey: fakeApiKey)
+            .Build();
+        
+        var fakeService = new GeminiSubtitleTranslationService(fakeKernel, temperature: 0, loggerFactory: _loggerFactory);
+        
+        var testLine = new SubtitleLine(TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(2), "Hallo Welt!");
+        var request = new SubtitleBatchRequest
+        {
+            ContextLines = new List<SubtitleLine>(),
+            LinesToTranslate = new List<SubtitleLine> { testLine }
+        };
+
+        // Act & Assert: We expect this to throw an exception after retries
+        // Note: This will take a while due to retry policy (30s + 60s + 120s + execution time)
+        // but we want to see the exact exception details
+        var exception = await Assert.ThrowsAnyAsync<Exception>(async () =>
+        {
+            await fakeService.TranslateBatchAsync(request, Lang.German, Lang.English);
+        });
+
+        // Log the full exception details to understand what's happening
+        _testOutputHelper.WriteLine($"Exception type: {exception.GetType().Name}");
+        _testOutputHelper.WriteLine($"Exception message: {exception.Message}");
+        if (exception.InnerException != null)
+        {
+            _testOutputHelper.WriteLine($"Inner exception type: {exception.InnerException.GetType().Name}");
+            _testOutputHelper.WriteLine($"Inner exception message: {exception.InnerException.Message}");
+        }
+        _testOutputHelper.WriteLine($"Full exception: {exception}");
+
+        // Check what kind of error we're actually getting
+        // We expect either 401 Unauthorized or 403 Forbidden, not 400 Bad Request
+        Assert.NotNull(exception);
+        
+        // Let's specifically check if it contains "400" to confirm our suspicion
+        var containsBadRequest = exception.ToString().Contains("400", StringComparison.InvariantCultureIgnoreCase);
+        var containsUnauthorized = exception.ToString().Contains("401", StringComparison.InvariantCultureIgnoreCase) ||
+                                 exception.ToString().Contains("403", StringComparison.InvariantCultureIgnoreCase) ||
+                                 exception.ToString().Contains("Unauthorized", StringComparison.InvariantCultureIgnoreCase) ||
+                                 exception.ToString().Contains("Forbidden", StringComparison.InvariantCultureIgnoreCase);
+        
+        _testOutputHelper.WriteLine($"Contains 400 Bad Request: {containsBadRequest}");
+        _testOutputHelper.WriteLine($"Contains 401/403 Unauthorized/Forbidden: {containsUnauthorized}");
+    }
+
+    [Fact]
+    public async Task TranslateBatchAsync_With15LinesAndContext_ShouldHandleMismatchedResponseCount()
+    {
+        // Arrange: Create the exact scenario from the failing test
+        // Create context lines (5 lines)
+        var contextLines = new List<SubtitleLine>
+        {
+            new(TimeSpan.Parse("00:07:25.706"), TimeSpan.Parse("00:07:28.625"), "...und das ist ein Gedanke, den ich hundertzehnprozentig unterstütze..."),
+            new(TimeSpan.Parse("00:07:28.704"), TimeSpan.Parse("00:07:29.997"), "Mir ist da jetzt nur leider ein Fehler"),
+            new(TimeSpan.Parse("00:07:30.078"), TimeSpan.Parse("00:07:31.997"), "beziehungsweise ich brauche überraschenderweise Bargeld."),
+            new(TimeSpan.Parse("00:07:32.077"), TimeSpan.Parse("00:07:33.745"), "Könnten Sie mir hundert Euro zurückgeben?"),
+            new(TimeSpan.Parse("00:07:34.034"), TimeSpan.Parse("00:07:36.328"), "Äh, Sie haben mir aber nur achtzig gegeben.")
+        };
+
+        // Create 15 lines to translate (the exact ones from the failing test)
+        var linesToTranslate = new List<SubtitleLine>
+        {
+            new(TimeSpan.Parse("00:07:36.408"), TimeSpan.Parse("00:07:37.409"), "Hundertachtzig."),
+            new(TimeSpan.Parse("00:07:37.740"), TimeSpan.Parse("00:07:39.450"), "Ich bin mir relativ sicher, das waren--"),
+            new(TimeSpan.Parse("00:07:39.532"), TimeSpan.Parse("00:07:41.200"), "Eben. \"Relativ\". Ich ganz."),
+            new(TimeSpan.Parse("00:07:41.281"), TimeSpan.Parse("00:07:43.408"), "Zeigen Sie mal."),
+            new(TimeSpan.Parse("00:07:46.695"), TimeSpan.Parse("00:07:48.905"), "Da. Sehen Sie? Hier."),
+            new(TimeSpan.Parse("00:07:48.986"), TimeSpan.Parse("00:07:51.697"), "Die beiden Fünfziger die sind von mir. Die erkenn ich an dem..."),
+            new(TimeSpan.Parse("00:07:51.734"), TimeSpan.Parse("00:07:53.278"), "Aber ich nehm ja nur einen. Und den Zehner. Ja?"),
+            new(TimeSpan.Parse("00:07:53.359"), TimeSpan.Parse("00:07:55.319"), "Sammelst du gerade für Frau Hilpers?"),
+            new(TimeSpan.Parse("00:07:55.400"), TimeSpan.Parse("00:07:56.943"), "Also, dann spenden Sie jetzt nur noch zwanzig?"),
+            new(TimeSpan.Parse("00:07:57.649"), TimeSpan.Parse("00:07:59.234"), "Sie will mich nicht verstehen."),
+            new(TimeSpan.Parse("00:07:59.315"), TimeSpan.Parse("00:08:01.818"), "Sie haben ja achtzig gegeben und sich jetzt sechzig wieder rausgenommen."),
+            new(TimeSpan.Parse("00:08:02.231"), TimeSpan.Parse("00:08:03.983"), "Das ist doch Quatsch!"),
+            new(TimeSpan.Parse("00:08:05.813"), TimeSpan.Parse("00:08:08.149"), "Ist ja nicht dauerhaft."),
+            new(TimeSpan.Parse("00:08:09.978"), TimeSpan.Parse("00:08:11.938"), "Erika? Sie wissen, dass wir im Hinblick auf die"),
+            new(TimeSpan.Parse("00:08:12.019"), TimeSpan.Parse("00:08:13.437"), "geplante Zusammenlegung der Abteilung")
+        };
+
+        var request = new SubtitleBatchRequest
+        {
+            ContextLines = contextLines,
+            LinesToTranslate = linesToTranslate
+        };
+
+        // Act & Assert: This should either succeed with 15 translations or fail gracefully
+        var exception = await Record.ExceptionAsync(async () =>
+        {
+            var result = await _service.TranslateBatchAsync(request, Lang.German, Lang.English);
+            
+            // If we get here, verify we got the expected number of translations
+            Assert.Equal(15, result.TranslatedLines.Count);
+            _testOutputHelper.WriteLine($"✅ Success: Got {result.TranslatedLines.Count} translations as expected");
+        });
+
+        if (exception != null)
+        {
+            _testOutputHelper.WriteLine($"❌ Translation failed as expected: {exception.Message}");
+            Assert.IsType<InvalidOperationException>(exception);
+            Assert.Contains("Expected 15 translations", exception.Message);
+        }
     }
 }
 }

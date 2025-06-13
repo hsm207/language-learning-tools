@@ -24,13 +24,18 @@ namespace LanguageLearningTools.Application.Tests
     {
         private readonly Mock<ISubtitleTranslationService> _mockTranslationService;
         private readonly Mock<ISubtitleBatchingStrategy> _mockBatchingStrategy;
+        private readonly Mock<ISubtitleParser> _mockSubtitleParser;
         private readonly SubtitleTranslationApplicationService _service;
 
         public SubtitleTranslationApplicationServiceTests()
         {
             _mockTranslationService = new Mock<ISubtitleTranslationService>();
             _mockBatchingStrategy = new Mock<ISubtitleBatchingStrategy>();
-            _service = new SubtitleTranslationApplicationService(_mockTranslationService.Object, _mockBatchingStrategy.Object);
+            _mockSubtitleParser = new Mock<ISubtitleParser>();
+            _service = new SubtitleTranslationApplicationService(
+                _mockTranslationService.Object, 
+                _mockBatchingStrategy.Object,
+                _mockSubtitleParser.Object);
         }
 
         [Fact]

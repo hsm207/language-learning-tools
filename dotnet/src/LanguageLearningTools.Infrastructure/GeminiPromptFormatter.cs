@@ -18,15 +18,19 @@ namespace LanguageLearningTools.Infrastructure
         public const string PromptTemplate = @"Translate the following subtitles from {{$sourceLanguage}} to {{$targetLanguage}}.
 Use context if provided. Return only the translated lines in the required schema.
 
-IMPORTANT:
+CRITICAL REQUIREMENTS:
+- You MUST translate EXACTLY the same number of lines as provided in ""LINES TO TRANSLATE"" section
+- Each input line MUST correspond to exactly ONE output translation
+- Do NOT merge, combine, or split lines under any circumstances
+- Do NOT skip any lines, even if they seem incomplete or related to other lines
 - Preserve all emoji and special characters exactly as they appear in the input. Do not output Unicode codepoints, escape sequences, or names—output the actual emoji or special character.
 - Do not add or remove any emoji or special characters.
 - The output must be valid JSON matching the schema, with the TranslatedText containing the actual emoji or special character, not a description or codepoint.
+- If a line seems incomplete or cut off, translate it as-is without trying to complete it or merge it with other lines.
 
 {{$contextLinesFormatted}}
 
-{{$linesToTranslateFormatted}}
-";
+{{$linesToTranslateFormatted}}";
 
         /// <summary>
         /// Formats the prompt variables for Gemini translation.
