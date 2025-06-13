@@ -103,7 +103,7 @@ public class Program
             }
             else
             {
-                builder.SetMinimumLevel(LogLevel.Warning);
+                builder.SetMinimumLevel(LogLevel.Information);
             }
         });
 
@@ -151,19 +151,29 @@ public class Program
         bool verbose,
         int requestDelay)
     {
+        // Set up dependency injection first so we can get our logger
+        var geminiApiKey = apiKey ?? Environment.GetEnvironmentVariable("GEMINI_API_KEY");
+        if (string.IsNullOrWhiteSpace(geminiApiKey))
+        {
+            Console.Error.WriteLine("Google Gemini API key is required. Provide it via --api-key argument or GEMINI_API_KEY environment variable.");
+            return;
+        }
+
+        var services = new ServiceCollection();
+        ConfigureServices(services, geminiApiKey, verbose, requestDelay);
+        var serviceProvider = services.BuildServiceProvider();
+        var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
+
         try
         {
-            if (verbose)
-            {
-                Console.WriteLine("🔍 Debug: Starting subtitle translation process...");
-                Console.WriteLine($"🔍 Debug: Input file: {input?.FullName ?? "null"}");
-                Console.WriteLine($"🔍 Debug: Output file: {output?.FullName ?? "auto-generated"}");
-                Console.WriteLine($"🔍 Debug: Source language: {sourceLanguage}");
-                Console.WriteLine($"🔍 Debug: Target language: {targetLanguage}");
-                Console.WriteLine($"🔍 Debug: Subtitle format: {subtitleFormat ?? "auto-detect"}");
-                Console.WriteLine($"🔍 Debug: API key provided: {(!string.IsNullOrWhiteSpace(apiKey) ? "Yes" : "Via environment")}");
-                Console.WriteLine($"🔍 Debug: Request delay: {requestDelay}ms");
-            }
+            logger.LogDebug("Starting subtitle translation process");
+            logger.LogDebug("Input file: {InputFile}", input?.FullName ?? "null");
+            logger.LogDebug("Output file: {OutputFile}", output?.FullName ?? "auto-generated");
+            logger.LogDebug("Source language: {SourceLanguage}", sourceLanguage);
+            logger.LogDebug("Target language: {TargetLanguage}", targetLanguage);
+            logger.LogDebug("Subtitle format: {SubtitleFormat}", subtitleFormat ?? "auto-detect");
+            logger.LogDebug("API key provided: {ApiKeyProvided}", !string.IsNullOrWhiteSpace(apiKey) ? "Yes" : "Via environment");
+            logger.LogDebug("Request delay: {RequestDelay}ms", requestDelay);
 
             if (input == null)
             {
@@ -177,11 +187,8 @@ public class Program
                 return;
             }
 
-            if (verbose)
-            {
-                Console.WriteLine($"🔍 Debug: Input file exists and is readable");
-                Console.WriteLine($"🔍 Debug: Input file size: {input.Length} bytes");
-            }
+            logger.LogDebug("Input file exists and is readable");
+            logger.LogDebug("Input file size: {FileSize} bytes", input.Length);
 
             // Parse language codes
             if (!LangExtensions.TryParseFromCode(sourceLanguage, out var sourceLang))
@@ -196,52 +203,23 @@ public class Program
                 return;
             }
 
-            if (verbose)
-            {
-                Console.WriteLine($"🔍 Debug: Parsed source language: {sourceLang} ({sourceLang.GetDisplayName()})");
-                Console.WriteLine($"🔍 Debug: Parsed target language: {targetLang} ({targetLang.GetDisplayName()})");
-            }
+            logger.LogDebug("Parsed source language: {SourceLang} ({SourceLangDisplay})", sourceLang, sourceLang.GetDisplayName());
+            logger.LogDebug("Parsed target language: {TargetLang} ({TargetLangDisplay})", targetLang, targetLang.GetDisplayName());
 
-            // Check for API key
-            var geminiApiKey = apiKey ?? Environment.GetEnvironmentVariable("GEMINI_API_KEY");
-            if (string.IsNullOrWhiteSpace(geminiApiKey))
-            {
-                Console.Error.WriteLine("Google Gemini API key is required. Provide it via --api-key argument or GEMINI_API_KEY environment variable.");
-                return;
-            }
-
-            if (verbose)
-            {
-                Console.WriteLine($"🔍 Debug: API key obtained successfully (length: {geminiApiKey.Length} characters)");
-            }
+            logger.LogDebug("API key obtained successfully (length: {ApiKeyLength} characters)", geminiApiKey.Length);
 
             // Generate output filename if not provided
             output ??= GenerateOutputFileName(input);
+            logger.LogDebug("Final output file: {OutputFile}", output.FullName);
 
-            if (verbose)
-            {
-                Console.WriteLine($"🔍 Debug: Final output file: {output.FullName}");
-            }
-
-            // Set up dependency injection with the runtime API key
-            var services = new ServiceCollection();
-            ConfigureServices(services, geminiApiKey, verbose, requestDelay);
-            var serviceProvider = services.BuildServiceProvider();
-
-            if (verbose)
-            {
-                Console.WriteLine("🔍 Debug: Dependency injection container configured successfully");
-            }
+            logger.LogDebug("Dependency injection container configured successfully");
 
             // Get the application service and delegate the work
             var translationService = serviceProvider.GetRequiredService<SubtitleTranslationApplicationService>();
             
             Console.WriteLine($"Translating {input.Name} from {sourceLang.GetDisplayName()} to {targetLang.GetDisplayName()}...");
-            
-            if (verbose)
-            {
-                Console.WriteLine("🔍 Debug: Starting translation process...");
-            }
+            logger.LogInformation("Starting translation of {InputFile} from {SourceLanguage} to {TargetLanguage}", 
+                input.Name, sourceLang.GetDisplayName(), targetLang.GetDisplayName());
             
             await translationService.TranslateSubtitleFileAsync(
                 input.FullName,
@@ -250,38 +228,27 @@ public class Program
                 targetLang);
 
             Console.WriteLine($"Translation completed! Output saved to: {output.FullName}");
+            logger.LogInformation("Translation completed successfully. Output saved to: {OutputFile}", output.FullName);
         }
         catch (FileNotFoundException ex)
         {
-            Console.Error.WriteLine($"File not found: {ex.Message}");
-            if (verbose)
-            {
-                Console.Error.WriteLine($"🔍 Debug: Full exception details: {ex}");
-            }
+            logger.LogError(ex, "File not found: {Message}", ex.Message);
         }
         catch (NotSupportedException ex)
         {
-            Console.Error.WriteLine($"Format not supported: {ex.Message}");
-            if (verbose)
-            {
-                Console.Error.WriteLine($"🔍 Debug: Full exception details: {ex}");
-            }
+            logger.LogError(ex, "Format not supported: {Message}", ex.Message);
         }
         catch (InvalidOperationException ex)
         {
-            Console.Error.WriteLine($"Operation failed: {ex.Message}");
-            if (verbose)
-            {
-                Console.Error.WriteLine($"🔍 Debug: Full exception details: {ex}");
-            }
+            logger.LogError(ex, "Operation failed: {Message}", ex.Message);
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"An unexpected error occurred: {ex.Message}");
-            if (verbose)
-            {
-                Console.Error.WriteLine($"🔍 Debug: Full exception details: {ex}");
-            }
+            logger.LogError(ex, "An unexpected error occurred: {Message}", ex.Message);
+        }
+        finally
+        {
+            serviceProvider.Dispose();
         }
     }
 
