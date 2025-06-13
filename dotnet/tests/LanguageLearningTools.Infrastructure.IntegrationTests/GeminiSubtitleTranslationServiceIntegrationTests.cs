@@ -127,7 +127,7 @@ public class GeminiSubtitleTranslationServiceIntegrationTests
             .Build();
         
         // For test determinism, set temperature to 0
-        _service = new GeminiSubtitleTranslationService(_kernel, temperature: 0, _loggerFactory);
+        _service = new GeminiSubtitleTranslationService(_kernel, temperature: 0, loggerFactory: _loggerFactory);
     }
 
     /// <summary>
