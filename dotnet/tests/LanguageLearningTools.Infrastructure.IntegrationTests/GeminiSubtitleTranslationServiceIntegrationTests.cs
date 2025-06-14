@@ -248,53 +248,33 @@ namespace LanguageLearningTools.Infrastructure.IntegrationTests
         }
 
         [Fact]
-        public async Task TranslateBatchAsync_WithFakeApiKey_ShouldThrowCorrectException()
+        public async Task TranslateBatchAsync_WithInvalidApiKey_ShouldThrowHttpOperationExceptionWithApiKeyInvalidError()
         {
-            // Arrange: Create a service with a completely fake API key
-            var fakeApiKey = "fake-gemini-api-key-for-testing-12345";
+            // Arrange: Service with an invalid API key and fast retry for quick feedback
+            var invalidApiKey = "fake-gemini-api-key-for-testing-12345";
             var fakeKernel = Kernel.CreateBuilder()
-                .AddGoogleAIGeminiChatCompletion(modelId: _modelId, apiKey: fakeApiKey)
+                .AddGoogleAIGeminiChatCompletion(modelId: _modelId, apiKey: invalidApiKey)
                 .Build();
-
-            var fakeService = new GeminiSubtitleTranslationService(fakeKernel, temperature: 0, loggerFactory: _loggerFactory);
-
-            var testLine = new SubtitleLine(TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(2), "Hallo Welt!");
+            var serviceWithInvalidKey = new GeminiSubtitleTranslationService(
+                fakeKernel,
+                temperature: 0,
+                loggerFactory: _loggerFactory,
+                retryCount: 1,
+                baseRetryDelaySeconds: 5
+            );
             var batch = new SubtitleBatch(
-                new List<SubtitleLine>(), // context
-                new List<SubtitleLine> { testLine } // lines to translate
+                new List<SubtitleLine>(),
+                new List<SubtitleLine> { new SubtitleLine(TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(2), "Hallo Welt!") }
             );
 
-            // Act & Assert: We expect this to throw an exception after retries
-            // Note: This will take a while due to retry policy (30s + 60s + 120s + execution time)
-            // but we want to see the exact exception details
-            var exception = await Assert.ThrowsAnyAsync<Exception>(async () =>
-            {
-                await fakeService.TranslateBatchAsync(batch, Lang.German, Lang.English);
-            });
+            // Act & Assert: Should throw HttpOperationException with specific Google API error details
+            var ex = await Assert.ThrowsAsync<Microsoft.SemanticKernel.HttpOperationException>(async () =>
+                await serviceWithInvalidKey.TranslateBatchAsync(batch, Lang.German, Lang.English));
 
-            // Log the full exception details to understand what's happening
-            _testOutputHelper.WriteLine($"Exception type: {exception.GetType().Name}");
-            _testOutputHelper.WriteLine($"Exception message: {exception.Message}");
-            if (exception.InnerException != null)
-            {
-                _testOutputHelper.WriteLine($"Inner exception type: {exception.InnerException.GetType().Name}");
-                _testOutputHelper.WriteLine($"Inner exception message: {exception.InnerException.Message}");
-            }
-            _testOutputHelper.WriteLine($"Full exception: {exception}");
-
-            // Check what kind of error we're actually getting
-            // We expect either 401 Unauthorized or 403 Forbidden, not 400 Bad Request
-            Assert.NotNull(exception);
-
-            // Let's specifically check if it contains "400" to confirm our suspicion
-            var containsBadRequest = exception.ToString().Contains("400", StringComparison.InvariantCultureIgnoreCase);
-            var containsUnauthorized = exception.ToString().Contains("401", StringComparison.InvariantCultureIgnoreCase) ||
-                                     exception.ToString().Contains("403", StringComparison.InvariantCultureIgnoreCase) ||
-                                     exception.ToString().Contains("Unauthorized", StringComparison.InvariantCultureIgnoreCase) ||
-                                     exception.ToString().Contains("Forbidden", StringComparison.InvariantCultureIgnoreCase);
-
-            _testOutputHelper.WriteLine($"Contains 400 Bad Request: {containsBadRequest}");
-            _testOutputHelper.WriteLine($"Contains 401/403 Unauthorized/Forbidden: {containsUnauthorized}");
+            // Verify the exception contains the expected Google API error details
+            _testOutputHelper.WriteLine($"ResponseContent: {ex.ResponseContent}");
+            Assert.Contains("400", ex.Message, StringComparison.InvariantCultureIgnoreCase);
+            Assert.Contains("API_KEY_INVALID", ex.ResponseContent, StringComparison.InvariantCultureIgnoreCase);
         }
 
         [Fact]
