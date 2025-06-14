@@ -15,13 +15,13 @@ namespace LanguageLearningTools.Infrastructure.Tests
         {
             // Arrange
             var request = new GeminiSubtitleBatchRequest(
-                new List<GeminiSubtitleLineDto>
+                new List<GeminiSubtitleLine>
                 {
-                    new GeminiSubtitleLineDto("00:00:01.000", "00:00:02.000", "Hello! 😊", null)
+                    new GeminiSubtitleLine("00:00:01.000", "00:00:02.000", "Hello! 😊", null)
                 },
-                new List<GeminiSubtitleLineDto>
+                new List<GeminiSubtitleLine>
                 {
-                    new GeminiSubtitleLineDto("00:00:03.000", "00:00:04.000", "How are you?", null)
+                    new GeminiSubtitleLine("00:00:03.000", "00:00:04.000", "How are you?", null)
                 }
             );
             var formatter = new GeminiPromptFormatter();
@@ -43,10 +43,10 @@ namespace LanguageLearningTools.Infrastructure.Tests
         {
             // Arrange
             var request = new GeminiSubtitleBatchRequest(
-                new List<GeminiSubtitleLineDto>(),
-                new List<GeminiSubtitleLineDto>
+                new List<GeminiSubtitleLine>(),
+                new List<GeminiSubtitleLine>
                 {
-                    new GeminiSubtitleLineDto("00:00:05.000", "00:00:06.000", "Goodbye!", null)
+                    new GeminiSubtitleLine("00:00:05.000", "00:00:06.000", "Goodbye!", null)
                 }
             );
             var formatter = new GeminiPromptFormatter();
@@ -67,10 +67,10 @@ namespace LanguageLearningTools.Infrastructure.Tests
         {
             // Arrange
             var request = new GeminiSubtitleBatchRequest(
-                new List<GeminiSubtitleLineDto>(),
-                new List<GeminiSubtitleLineDto>
+                new List<GeminiSubtitleLine>(),
+                new List<GeminiSubtitleLine>
                 {
-                    new GeminiSubtitleLineDto("00:00:07.000", "00:00:08.000", "¡Hola! ¿Qué tal? 🦄", null)
+                    new GeminiSubtitleLine("00:00:07.000", "00:00:08.000", "¡Hola! ¿Qué tal? 🦄", null)
                 }
             );
             var formatter = new GeminiPromptFormatter();

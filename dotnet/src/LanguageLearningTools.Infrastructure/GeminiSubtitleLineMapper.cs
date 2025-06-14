@@ -5,22 +5,34 @@ using LanguageLearningTools.Domain;
 namespace LanguageLearningTools.Infrastructure
 {
     /// <summary>
-    /// Provides mapping between domain SubtitleLine and GeminiSubtitleLineDto.
+    /// Provides bidirectional mapping between domain SubtitleLine and Gemini API representations.
+    /// Handles the translation boundary between our clean domain model and external API requirements.
     /// </summary>
     /// <remarks>
-    /// Ensures consistent conversion between domain and Gemini DTOs, including timestamp formatting.
+    /// <para><strong>Translation Flow:</strong></para>
+    /// <list type="number">
+    /// <item><description><strong>Outbound:</strong> Domain → Gemini (via ToGeminiDto) for API requests</description></item>
+    /// <item><description><strong>Inbound:</strong> Gemini → Domain (via FromGeminiDto) for processing responses</description></item>
+    /// </list>
+    /// <para><strong>Key Transformations:</strong></para>
+    /// <list type="bullet">
+    /// <item><description>TimeSpan ↔ String timestamp conversion ("hh:mm:ss.fff" format)</description></item>
+    /// <item><description>HTML entity decoding for proper Unicode character display (emojis, special chars)</description></item>
+    /// <item><description>Null safety and validation</description></item>
+    /// </list>
     /// </remarks>
     public static class GeminiSubtitleLineMapper
     {
         /// <summary>
-        /// Maps a domain <see cref="SubtitleLine"/> to a <see cref="GeminiSubtitleLineDto"/>.
+        /// Converts a domain subtitle line to Gemini API format for outbound requests.
         /// </summary>
-        /// <param name="line">The domain subtitle line.</param>
-        /// <returns>The Gemini DTO.</returns>
-        public static GeminiSubtitleLineDto ToGeminiDto(SubtitleLine line)
+        /// <param name="line">The domain subtitle line to convert</param>
+        /// <returns>A Gemini-compatible representation with string timestamps</returns>
+        /// <exception cref="ArgumentNullException">Thrown when line is null</exception>
+        public static GeminiSubtitleLine ToGeminiDto(SubtitleLine line)
         {
             if (line == null) throw new ArgumentNullException(nameof(line));
-            return new GeminiSubtitleLineDto(
+            return new GeminiSubtitleLine(
                 line.Start.ToString(@"hh\:mm\:ss\.fff"),
                 line.End.ToString(@"hh\:mm\:ss\.fff"),
                 line.Text,
@@ -29,15 +41,17 @@ namespace LanguageLearningTools.Infrastructure
         }
 
         /// <summary>
-        /// Maps a <see cref="GeminiSubtitleLineDto"/> to a domain <see cref="SubtitleLine"/>.
+        /// Converts a Gemini API response back to our domain model for internal processing.
         /// </summary>
-        /// <param name="dto">The Gemini DTO.</param>
-        /// <returns>The domain subtitle line.</returns>
+        /// <param name="dto">The Gemini API response data to convert</param>
+        /// <returns>A domain subtitle line with proper TimeSpan timestamps and decoded text</returns>
+        /// <exception cref="ArgumentNullException">Thrown when dto is null</exception>
         /// <remarks>
-        /// HTML entities in the translated text are decoded to preserve proper Unicode characters,
-        /// ensuring emojis and special characters are displayed correctly.
+        /// <strong>HTML Entity Decoding:</strong> Gemini sometimes returns HTML entities (like &amp;ouml; or &amp;#129412;) 
+        /// instead of proper Unicode characters. This method automatically decodes them to ensure 
+        /// emojis and special characters display correctly in the final output.
         /// </remarks>
-        public static SubtitleLine FromGeminiDto(GeminiSubtitleLineDto dto)
+        public static SubtitleLine FromGeminiDto(GeminiSubtitleLine dto)
         {
             if (dto == null) throw new ArgumentNullException(nameof(dto));
             

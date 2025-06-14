@@ -24,7 +24,7 @@ namespace LanguageLearningTools.Infrastructure.Tests
         [Fact]
         public void FromGeminiDto_MapsCorrectly()
         {
-            var dto = new GeminiSubtitleLineDto("00:00:03.000", "00:00:04.000", "How are you?", "Wie geht's?");
+            var dto = new GeminiSubtitleLine("00:00:03.000", "00:00:04.000", "How are you?", "Wie geht's?");
             var line = GeminiSubtitleLineMapper.FromGeminiDto(dto);
             Assert.Equal(TimeSpan.FromSeconds(3), line.Start);
             Assert.Equal(TimeSpan.FromSeconds(4), line.End);
@@ -60,7 +60,7 @@ namespace LanguageLearningTools.Infrastructure.Tests
         public void FromGeminiDto_DecodesHtmlEntitiesInTranslatedText()
         {
             // HTML entities that Gemini sometimes returns instead of Unicode characters
-            var dto = new GeminiSubtitleLineDto(
+            var dto = new GeminiSubtitleLine(
                 "00:00:01.000", 
                 "00:00:02.000", 
                 "Hello world", 
