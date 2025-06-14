@@ -1,4 +1,5 @@
 using System;
+using System.Net;
 using LanguageLearningTools.Domain;
 
 namespace LanguageLearningTools.Infrastructure
@@ -32,14 +33,22 @@ namespace LanguageLearningTools.Infrastructure
         /// </summary>
         /// <param name="dto">The Gemini DTO.</param>
         /// <returns>The domain subtitle line.</returns>
+        /// <remarks>
+        /// HTML entities in the translated text are decoded to preserve proper Unicode characters,
+        /// ensuring emojis and special characters are displayed correctly.
+        /// </remarks>
         public static SubtitleLine FromGeminiDto(GeminiSubtitleLineDto dto)
         {
             if (dto == null) throw new ArgumentNullException(nameof(dto));
+            
+            // Decode HTML entities in the translated text to preserve Unicode characters (emojis, etc.)
+            var decodedTranslatedText = WebUtility.HtmlDecode(dto.TranslatedText);
+            
             return new SubtitleLine(
                 TimeSpan.ParseExact(dto.Start, @"hh\:mm\:ss\.fff", null),
                 TimeSpan.ParseExact(dto.End, @"hh\:mm\:ss\.fff", null),
                 dto.Text,
-                dto.TranslatedText
+                decodedTranslatedText
             );
         }
     }
