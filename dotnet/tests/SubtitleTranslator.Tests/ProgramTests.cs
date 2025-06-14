@@ -19,10 +19,10 @@ namespace SubtitleTranslator.Tests
         {
             // Arrange
             var inputFile = new FileInfo("/path/to/subtitle.ttml");
-            
+
             // Act
             var result = Program.GenerateOutputFileName(inputFile);
-            
+
             // Assert
             result.Name.Should().Be("subtitle_translated.json");
             result.DirectoryName.Should().Be("/path/to");
@@ -36,10 +36,10 @@ namespace SubtitleTranslator.Tests
         {
             // Arrange
             var inputFile = new FileInfo("/path/to/subtitle");
-            
+
             // Act
             var result = Program.GenerateOutputFileName(inputFile);
-            
+
             // Assert
             result.Name.Should().Be("subtitle_translated.json");
             result.DirectoryName.Should().Be("/path/to");
@@ -57,7 +57,7 @@ namespace SubtitleTranslator.Tests
         {
             // Act
             var success = LangExtensions.TryParseFromCode(code, out var result);
-            
+
             // Assert
             success.Should().BeTrue();
             result.Should().Be(expected);
@@ -75,7 +75,7 @@ namespace SubtitleTranslator.Tests
         {
             // Act
             var success = LangExtensions.TryParseFromCode(code, out var result);
-            
+
             // Assert
             success.Should().BeFalse();
             result.Should().Be(default(Lang));
@@ -91,7 +91,7 @@ namespace SubtitleTranslator.Tests
         {
             // Act
             var result = lang.GetDisplayName();
-            
+
             // Assert
             result.Should().Be(expected);
         }
@@ -106,7 +106,7 @@ namespace SubtitleTranslator.Tests
         {
             // Act
             var result = lang.ToCode();
-            
+
             // Assert
             result.Should().Be(expected);
         }

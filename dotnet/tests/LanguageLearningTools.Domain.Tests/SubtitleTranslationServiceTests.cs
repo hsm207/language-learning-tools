@@ -59,7 +59,7 @@ namespace LanguageLearningTools.Domain.Tests
                 var translated = new List<SubtitleLine>();
                 foreach (var line in request.LinesToTranslate)
                 {
-                    translated.Add(new SubtitleLine(line.Start, line.End, line.Text, $"{line.Text} [{targetLanguage}]") );
+                    translated.Add(new SubtitleLine(line.Start, line.End, line.Text, $"{line.Text} [{targetLanguage}]"));
                 }
                 return Task.FromResult(new SubtitleBatchResponse { TranslatedLines = translated });
             }

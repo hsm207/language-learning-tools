@@ -28,15 +28,15 @@ namespace LanguageLearningTools.Domain
 
                 // Determine context
                 var context = new List<SubtitleLine>();
-                
+
                 if (contextSize > 0 && currentIndex > 0)
                 {
                     // Calculate how many lines we can get from previous batch overlap
                     int availableOverlap = Math.Min(contextOverlap, previousBatchForContext.Count);
-                    
+
                     // Calculate total context window size
                     int totalContextNeeded = Math.Min(contextSize, currentIndex);
-                    
+
                     // Start from the position that gives us exactly contextSize lines (or all available)
                     int contextStart = currentIndex - totalContextNeeded;
                     context = lines.GetRange(contextStart, totalContextNeeded);

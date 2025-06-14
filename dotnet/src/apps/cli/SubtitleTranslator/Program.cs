@@ -27,7 +27,7 @@ public class Program
         { IsRequired = true };
 
         var outputOption = new Option<FileInfo?>(
-            name: "--output", 
+            name: "--output",
             description: "The output JSON file for translated subtitles (optional; defaults to input filename with '_translated.json' suffix)");
 
         var sourceLanguageOption = new Option<string>(
@@ -36,7 +36,7 @@ public class Program
         { IsRequired = true };
 
         var targetLanguageOption = new Option<string>(
-            name: "--target-language", 
+            name: "--target-language",
             description: "Target language code for translation (e.g., 'en' for English, 'english')")
         { IsRequired = true };
 
@@ -72,10 +72,10 @@ public class Program
         rootCommand.SetHandler(
             async (input, output, sourceLanguage, targetLanguage, subtitleFormat, apiKey, verbose, requestsPerMinute) =>
                 await HandleTranslateAsync(input, output, sourceLanguage, targetLanguage, subtitleFormat, apiKey, verbose, requestsPerMinute),
-            inputOption, 
-            outputOption, 
-            sourceLanguageOption, 
-            targetLanguageOption, 
+            inputOption,
+            outputOption,
+            sourceLanguageOption,
+            targetLanguageOption,
             subtitleFormatOption,
             apiKeyOption,
             verboseOption,
@@ -115,7 +115,7 @@ public class Program
 
         // Register domain services
         services.AddTransient<ISubtitleBatchingStrategy, RollingWindowBatchingStrategy>();
-        
+
         // Register infrastructure services
         services.AddTransient<ISubtitleParser, TtmlSubtitleParser>();
         services.AddTransient<ISubtitleTranslationService>(provider =>
@@ -127,7 +127,7 @@ public class Program
             var delay = TimeSpan.FromMilliseconds(delayMs);
             return new GeminiSubtitleTranslationService(kernel, temperature: 0.2, requestDelay: delay, loggerFactory: loggerFactory);
         });
-        
+
         // Register application services
         services.AddTransient<SubtitleTranslationApplicationService>();
     }
@@ -144,10 +144,10 @@ public class Program
     /// <param name="verbose">Enable verbose debug output.</param>
     /// <param name="requestsPerMinute">Maximum requests per minute for rate limiting.</param>
     private static async Task HandleTranslateAsync(
-        FileInfo? input, 
-        FileInfo? output, 
-        string sourceLanguage, 
-        string targetLanguage, 
+        FileInfo? input,
+        FileInfo? output,
+        string sourceLanguage,
+        string targetLanguage,
         string? subtitleFormat,
         string? apiKey,
         bool verbose,
@@ -218,11 +218,11 @@ public class Program
 
             // Get the application service and delegate the work
             var translationService = serviceProvider.GetRequiredService<SubtitleTranslationApplicationService>();
-            
+
             Console.WriteLine($"Translating {input.Name} from {sourceLang.GetDisplayName()} to {targetLang.GetDisplayName()}...");
-            logger.LogInformation("Starting translation of {InputFile} from {SourceLanguage} to {TargetLanguage}", 
+            logger.LogInformation("Starting translation of {InputFile} from {SourceLanguage} to {TargetLanguage}",
                 input.Name, sourceLang.GetDisplayName(), targetLang.GetDisplayName());
-            
+
             await translationService.TranslateSubtitleFileAsync(
                 input.FullName,
                 output.FullName,
@@ -263,7 +263,7 @@ public class Program
     {
         var directory = input.DirectoryName ?? "";
         var nameWithoutExtension = Path.GetFileNameWithoutExtension(input.Name);
-        
+
         var outputFileName = $"{nameWithoutExtension}_translated.json";
         return new FileInfo(Path.Combine(directory, outputFileName));
     }

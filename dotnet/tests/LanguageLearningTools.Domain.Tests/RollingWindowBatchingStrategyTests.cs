@@ -22,13 +22,13 @@ namespace LanguageLearningTools.Domain.Tests
             // Batch 2: Lines 4-6, context: Line 3 (overlap) + Line 2 (additional)  
             // Batch 3: Line 7, context: Line 6 (overlap) + Line 5 (additional)
             Assert.Equal(3, batches.Count);
-            
+
             Assert.Equal(new[] { "Line 1", "Line 2", "Line 3" }, batches[0].Lines.Select(l => l.Text));
             Assert.Empty(batches[0].Context);
-            
+
             Assert.Equal(new[] { "Line 4", "Line 5", "Line 6" }, batches[1].Lines.Select(l => l.Text));
             Assert.Equal(new[] { "Line 2", "Line 3" }, batches[1].Context.Select(l => l.Text));
-            
+
             Assert.Equal(new[] { "Line 7" }, batches[2].Lines.Select(l => l.Text));
             Assert.Equal(new[] { "Line 5", "Line 6" }, batches[2].Context.Select(l => l.Text));
         }

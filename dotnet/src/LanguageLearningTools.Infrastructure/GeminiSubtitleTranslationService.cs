@@ -97,7 +97,7 @@ namespace LanguageLearningTools.Infrastructure
                     sleepDurationProvider: attempt => TimeSpan.FromSeconds(30 * Math.Pow(2, attempt - 1)),
                     onRetry: (exception, timespan, attempt, context) =>
                     {
-                        _logger.LogWarning("Retrying translation attempt {Attempt} after {DelaySeconds}s due to exception: {Exception}", 
+                        _logger.LogWarning("Retrying translation attempt {Attempt} after {DelaySeconds}s due to exception: {Exception}",
                             attempt, timespan.TotalSeconds, exception.Message);
                     });
 
@@ -122,19 +122,19 @@ namespace LanguageLearningTools.Infrastructure
 
             var expectedCount = request.LinesToTranslate.Count;
             var actualCount = geminiResponse.TranslatedLines.Count;
-            
+
             if (actualCount != expectedCount)
             {
                 _logger.LogError("Translation failed: Expected {ExpectedCount} translations, got {ActualCount}. " +
                     "Each input line must produce exactly one translation. API may have merged or skipped lines.",
                     expectedCount, actualCount);
-                    
+
                 // Log the actual response for debugging
-                _logger.LogDebug("Expected lines: {ExpectedLines}", 
+                _logger.LogDebug("Expected lines: {ExpectedLines}",
                     string.Join(", ", request.LinesToTranslate.Select(l => $"'{l.Text}'")));
-                _logger.LogDebug("Received translations: {ReceivedTranslations}", 
+                _logger.LogDebug("Received translations: {ReceivedTranslations}",
                     string.Join(", ", geminiResponse.TranslatedLines.Select(l => $"'{l.Text}' -> '{l.TranslatedText}'")));
-                    
+
                 throw new InvalidOperationException($"Expected {expectedCount} translations, got {actualCount}. " +
                     "Each input line must produce exactly one translation.");
             }

@@ -33,7 +33,7 @@ namespace LanguageLearningTools.Application.Tests
             _mockBatchingStrategy = new Mock<ISubtitleBatchingStrategy>();
             _mockSubtitleParser = new Mock<ISubtitleParser>();
             _service = new SubtitleTranslationApplicationService(
-                _mockTranslationService.Object, 
+                _mockTranslationService.Object,
                 _mockBatchingStrategy.Object,
                 _mockSubtitleParser.Object);
         }
@@ -44,7 +44,7 @@ namespace LanguageLearningTools.Application.Tests
             // This test verifies the happy path: the service takes a document with subtitle lines,
             // uses the batching strategy to group them, translates each batch, and returns
             // a new document where each line has both original and translated text.
-            
+
             // Arrange - Set up test data with German subtitle lines
             var originalLines = new[]
             {
@@ -56,7 +56,7 @@ namespace LanguageLearningTools.Application.Tests
             // Mock the batching strategy to return a single batch containing all lines
             var batch = new SubtitleBatch(Array.Empty<SubtitleLine>(), originalLines);
             var batches = new[] { batch };
-            
+
             // Mock the translation service to return translated versions of the lines
             var translatedLines = new[]
             {
@@ -93,7 +93,7 @@ namespace LanguageLearningTools.Application.Tests
             // This test ensures the service validates its input parameters.
             // A null document should result in an ArgumentNullException to provide
             // clear feedback about invalid usage rather than obscure null reference errors.
-            
+
             // Act & Assert - Verify proper exception is thrown for invalid input
             await Assert.ThrowsAsync<ArgumentNullException>(() =>
                 _service.TranslateDocumentAsync(null!, Lang.German, Lang.English));
@@ -106,7 +106,7 @@ namespace LanguageLearningTools.Application.Tests
             // An empty document (no subtitle lines) should return an empty document
             // without attempting any translation calls, avoiding unnecessary API costs
             // and potential errors from translation services.
-            
+
             // Arrange - Create an empty document with no subtitle lines
             var emptyDocument = new SubtitleDocument(Array.Empty<SubtitleLine>());
             var emptyBatches = Array.Empty<SubtitleBatch>();
@@ -122,7 +122,7 @@ namespace LanguageLearningTools.Application.Tests
             // Assert - Verify we get an empty document back without errors
             Assert.NotNull(result);
             Assert.Empty(result.Lines);
-            
+
             // Verify that no translation service calls were made (efficiency check)
             _mockTranslationService.Verify(
                 x => x.TranslateBatchAsync(It.IsAny<SubtitleBatchRequest>(), It.IsAny<Lang>(), It.IsAny<Lang>()),
@@ -137,7 +137,7 @@ namespace LanguageLearningTools.Application.Tests
             // 2. Each batch is translated separately (potentially for context/API limits)
             // 3. Results from all batches are combined back into a single document
             // 4. The final document maintains the original order of subtitle lines
-            
+
             // Arrange - Create a document with 5 lines that will be split into 2 batches
             var lines = Enumerable.Range(1, 5)
                 .Select(i => new SubtitleLine(TimeSpan.FromSeconds(i), TimeSpan.FromSeconds(i + 1), $"German text {i}"))
@@ -174,11 +174,11 @@ namespace LanguageLearningTools.Application.Tests
             // Assert - Verify all lines are present and correctly translated
             Assert.Equal(5, result.Lines.Count);
             Assert.All(result.Lines, line => Assert.NotNull(line.TranslatedText));
-            
+
             // Verify specific translations to ensure correct batch combination
             Assert.Contains("English text 1", result.Lines.Select(l => l.TranslatedText));
             Assert.Contains("English text 5", result.Lines.Select(l => l.TranslatedText));
-            
+
             // Verify that translation service was called exactly twice (once per batch)
             _mockTranslationService.Verify(
                 x => x.TranslateBatchAsync(It.IsAny<SubtitleBatchRequest>(), Lang.German, Lang.English),

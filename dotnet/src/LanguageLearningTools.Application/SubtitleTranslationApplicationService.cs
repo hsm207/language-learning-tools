@@ -74,10 +74,10 @@ namespace LanguageLearningTools.Application
 
             // Create batches using our strategy - let it decide how to group the lines
             var batches = _batchingStrategy.CreateBatches(document.Lines.ToList(), _batchSize, _contextSize, _contextOverlap);
-            
+
             // Translate each batch and collect the results
             var translatedLines = new List<SubtitleLine>();
-            
+
             foreach (var batch in batches)
             {
                 // Create the batch request with the lines from the batch
@@ -86,10 +86,10 @@ namespace LanguageLearningTools.Application
                     ContextLines = batch.Context.ToList(),
                     LinesToTranslate = batch.Lines.ToList()
                 };
-                
+
                 // Get the translation for this batch
                 var batchResponse = await _translationService.TranslateBatchAsync(batchRequest, sourceLanguage, targetLanguage);
-                
+
                 // Add the translated lines to our collection
                 translatedLines.AddRange(batchResponse.TranslatedLines);
             }
@@ -139,7 +139,7 @@ namespace LanguageLearningTools.Application
                     TranslatedText = line.TranslatedText
                 }),
                 new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
-            
+
             await File.WriteAllTextAsync(outputPath, jsonContent);
         }
     }

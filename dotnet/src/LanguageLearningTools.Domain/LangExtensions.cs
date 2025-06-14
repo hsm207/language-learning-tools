@@ -54,7 +54,7 @@ namespace LanguageLearningTools.Domain
             }
 
             var normalizedCode = code.ToLowerInvariant().Trim();
-            
+
             lang = normalizedCode switch
             {
                 "de" or "german" => Lang.German,
