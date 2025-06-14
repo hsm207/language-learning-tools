@@ -158,6 +158,32 @@ The JSON output looks like this:
 ]
 ```
 
+## 🎨 What To Do With Your JSON File
+
+### Looking at Your Translations
+
+So you've got this JSON file with all your translated subtitles... now what? 
+
+We made a simple web viewer to display the data in a table format:
+
+- Tables are sortable (click the headers)
+- You can copy whole columns to paste into Excel or other apps
+- Has basic search/filter for finding specific lines
+- Works on mobile browsers too
+
+**→ [Subtitle JSON Viewer](../../../docs/tools/subtitle-json-viewer.html)**
+
+Open that HTML file in your browser and upload your JSON file.
+
+### How to Use It
+
+1. Get your JSON file from running this CLI
+2. Open the viewer link above in any browser
+3. Upload your JSON file (drag and drop or click to browse)
+4. View your subtitles in a readable table format
+
+The viewer runs entirely in your browser - no data gets sent anywhere.
+
 ## 🔧 Development
 
 ### Building from Source
