@@ -171,7 +171,7 @@ We made a simple web viewer to display the data in a table format:
 - Has basic search/filter for finding specific lines
 - Works on mobile browsers too
 
-**→ [Subtitle JSON Viewer](../../../docs/tools/subtitle-json-viewer.html)**
+**→ [Subtitle JSON Viewer](../../../../../docs/tools/subtitle-json-viewer.html)**
 
 Open that HTML file in your browser and upload your JSON file.
 
