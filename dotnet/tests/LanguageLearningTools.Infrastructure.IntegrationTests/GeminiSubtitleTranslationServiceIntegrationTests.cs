@@ -8,97 +8,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Connectors.Google;
+using Neovolve.Logging.Xunit;
 using Xunit;
 using Xunit.Abstractions;
 using xRetry;
 
 namespace LanguageLearningTools.Infrastructure.IntegrationTests
 {
-    /// <summary>
-    /// Simple logger factory for xUnit tests
-    /// </summary>
-    public class XUnitLoggerFactory : ILoggerFactory
-    {
-        private readonly ITestOutputHelper _testOutputHelper;
-        private readonly LogLevel _minLogLevel;
-
-        public XUnitLoggerFactory(ITestOutputHelper testOutputHelper, LogLevel minLogLevel = LogLevel.Debug)
-        {
-            _testOutputHelper = testOutputHelper;
-            _minLogLevel = minLogLevel;
-        }
-
-        public ILogger CreateLogger(string categoryName)
-        {
-            return new XUnitLogger(_testOutputHelper, categoryName, _minLogLevel);
-        }
-
-        public void AddProvider(ILoggerProvider provider) { }
-        public void Dispose() { }
-    }
-
-    /// <summary>
-    /// Simple logger provider that outputs to xUnit test output
-    /// </summary>
-    public class XUnitLoggerProvider : ILoggerProvider
-    {
-        private readonly ITestOutputHelper _testOutputHelper;
-
-        public XUnitLoggerProvider(ITestOutputHelper testOutputHelper)
-        {
-            _testOutputHelper = testOutputHelper;
-        }
-
-        public ILogger CreateLogger(string categoryName)
-        {
-            return new XUnitLogger(_testOutputHelper, categoryName);
-        }
-
-        public void Dispose() { }
-    }
-
-    /// <summary>
-    /// Simple logger that outputs to xUnit test output
-    /// </summary>
-    public class XUnitLogger : ILogger
-    {
-        private readonly ITestOutputHelper _testOutputHelper;
-        private readonly string _categoryName;
-        private readonly LogLevel _minLogLevel;
-
-        public XUnitLogger(ITestOutputHelper testOutputHelper, string categoryName, LogLevel minLogLevel = LogLevel.Debug)
-        {
-            _testOutputHelper = testOutputHelper;
-            _categoryName = categoryName;
-            _minLogLevel = minLogLevel;
-        }
-
-        public IDisposable BeginScope<TState>(TState state) => null;
-
-        public bool IsEnabled(LogLevel logLevel) => logLevel >= _minLogLevel;
-
-        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
-        {
-            if (!IsEnabled(logLevel))
-                return;
-
-            try
-            {
-                var message = formatter(state, exception);
-                _testOutputHelper.WriteLine($"[{logLevel}] {_categoryName}: {message}");
-
-                if (exception != null)
-                {
-                    _testOutputHelper.WriteLine($"Exception: {exception}");
-                }
-            }
-            catch
-            {
-                // Swallow exceptions to prevent test failures due to logging issues
-            }
-        }
-    }
-
     public class GeminiSubtitleTranslationServiceIntegrationTests
     {
         private readonly string _apiKey;
@@ -119,7 +35,7 @@ namespace LanguageLearningTools.Infrastructure.IntegrationTests
             if (string.IsNullOrWhiteSpace(_apiKey))
                 throw new InvalidOperationException("GEMINI_API_KEY must be set in user secrets.");
 
-            // Create logger factory that outputs to xUnit test output
+            // Create logger factory that outputs to xUnit test output using Neovolve.Logging.Xunit
             // Change this to see debug logs during test execution
             _loggerFactory = CreateLoggerFactory(enableDebugLogging: true);
 
@@ -144,8 +60,8 @@ namespace LanguageLearningTools.Infrastructure.IntegrationTests
                 return Microsoft.Extensions.Logging.Abstractions.NullLoggerFactory.Instance;
             }
 
-            // Create a simple logger factory that outputs to xUnit test output
-            return new XUnitLoggerFactory(_testOutputHelper, LogLevel.Debug);
+            // Use the Neovolve.Logging.Xunit package for clean test output logging
+            return LogFactory.Create(_testOutputHelper);
         }
 
         /// <summary>
