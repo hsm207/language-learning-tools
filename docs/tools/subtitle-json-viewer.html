@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Subtitle JSON Viewer - Language Learning Tools</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css">
+  <style>
+    body {
+      background: #202124;
+      color: #eee;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 2rem auto;
+      background: #292b2f;
+      border-radius: 18px;
+      box-shadow: 0 6px 40px #111c, 0 1px 8px #0005;
+      padding: 2rem;
+      position: relative;
+    }
+    h1 {
+      text-align: center;
+      color: #fff;
+      letter-spacing: 0.04em;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5em;
+    }
+    .info-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5em;
+      width: 100%;
+    }
+    .info-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg,#3a88fd 40%,#e040fb 100%);
+      color: #fff;
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      font-size: 13px;
+      font-weight: bold;
+      text-align: center;
+      line-height: 1;
+      cursor: pointer;
+      position: relative;
+      user-select: none;
+      transition: box-shadow 0.2s, background 0.2s;
+      box-shadow: 0 2px 8px #0002;
+      border: none;
+      outline: none;
+    }
+    .info-icon:focus {
+      outline: 2px solid #6ac7ff;
+    }
+    .info-tooltip {
+      display: none;
+      position: absolute;
+      top: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #23252c;
+      color: #eaeaea;
+      border-radius: 10px;
+      box-shadow: 0 6px 24px #111b, 0 1px 6px #0002;
+      padding: 1em 1.2em;
+      font-size: 1.05em;
+      width: 350px;
+      max-width: 92vw;
+      z-index: 9999;
+      text-align: left;
+      pointer-events: auto;
+      opacity: 0;
+      transition: opacity 0.3s ease-in-out;
+    }
+    
+    .tooltip-active .info-tooltip {
+      display: block;
+      opacity: 1;
+    }
+    
+    .tooltip-active #hot {
+      opacity: 0.3;
+      pointer-events: none;
+      transition: opacity 0.3s ease-in-out;
+    }
+    .info-icon:hover ~ .info-tooltip, .info-icon:focus ~ .info-tooltip {
+      display: block;
+      opacity: 1;
+      pointer-events: auto;
+    }
+    #hot {
+      margin: auto;
+      max-width: 1000px;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .tip {
+      margin-top: 2em;
+      color: #ccc;
+      text-align: center;
+      font-size: 1rem;
+    }
+    .upload {
+      text-align: center;
+      margin-bottom: 2em;
+    }
+    .upload label {
+      font-weight: bold;
+      color: #fff;
+      font-size: 1.08em;
+    }
+    .upload input[type="file"] {
+      margin-left: 1em;
+    }
+    @media (max-width: 600px) {
+      .info-tooltip { left: 20px; transform: none; right: 20px; width: auto; }
+      h1 { font-size: 1.07em; }
+      .info-wrap { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="info-wrap">
+    <h1>Subtitle JSON Viewer</h1>
+    <span tabindex="0" class="info-icon" aria-label="Usage info">&#8505;</span>
+    <div class="info-tooltip">
+      <b>How it works:</b><br>
+      • <b>Upload</b> a <b>JSON file</b> containing subtitle translations from SubtitleTranslator CLI.<br>
+      • Each object key becomes a <b>table column</b> (StartTime, EndTime, OriginalText, TranslatedText).<br>
+      • Column headers are generated from the key names.<br>
+      • All values are auto-decoded (so ü = ü, etc).<br>
+      • <b>Copy any column</b>: Click the header, drag down, Ctrl+C.<br><br>
+      <i>Perfect for subtitle translations, language learning transcripts, and exported spreadsheets. Upload your SubtitleTranslator output now!</i>
+    </div>
+  </div>
+  <div class="upload">
+    <label>Upload your SubtitleTranslator JSON file:
+      <input id="fileInput" type="file" accept=".json" />
+    </label>
+  </div>
+  <div id="hot"></div>
+  <div class="tip">
+    Tip: To copy a whole column, click its header and drag down, then <b>Ctrl+C</b>! Paste into Excel, Google Sheets, or Notion.<br>
+    <span style="opacity:0.7;">(Works best in Chrome or Edge!)</span>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
+<script>
+  let hot;
+  function decodeHTMLEntities(text) {
+    if (typeof text !== 'string') return text;
+    var textarea = document.createElement('textarea');
+    textarea.innerHTML = text;
+    return textarea.value;
+  }
+  function renderTable(data, colHeaders) {
+    const container = document.getElementById('hot');
+    if (hot) hot.destroy();
+    hot = new Handsontable(container, {
+      data: data,
+      colHeaders: colHeaders,
+      rowHeaders: true,
+      width: "100%",
+      height: 500,
+      licenseKey: 'non-commercial-and-evaluation',
+      stretchH: "all",
+      readOnly: true,
+      manualColumnResize: true,
+      manualRowResize: true,
+      contextMenu: true,
+      filters: true,
+      dropdownMenu: true,
+      columnSorting: true,
+      columns: colHeaders.map(() => ({ width: 180 })),
+    });
+  }
+  // Demo data matching SubtitleTranslator CLI output format
+  const sampleObjects = [
+    {"StartTime": "00:01:01.000", "EndTime": "00:01:03.500", "OriginalText": "Hallo! Wie geht's?", "TranslatedText": "Hello! How are you?"},
+    {"StartTime": "00:01:04.000", "EndTime": "00:01:06.200", "OriginalText": "Mir geht's gut, danke!", "TranslatedText": "I'm doing well, thank you!"},
+    {"StartTime": "00:01:06.500", "EndTime": "00:01:08.000", "OriginalText": "Das freut mich.", "TranslatedText": "That makes me happy."}
+  ];
+  const keys = Object.keys(sampleObjects[0]);
+  renderTable(sampleObjects.map(obj => keys.map(k => decodeHTMLEntities(obj[k]))), keys);
+  // Info tooltip show/hide with smooth interactions
+  const infoIcon = document.querySelector('.info-icon');
+  const infoTooltip = document.querySelector('.info-tooltip');
+  const container = document.querySelector('.container');
+  
+  let tooltipTimeout;
+  let isTooltipVisible = false;
+  
+  function showTooltip() {
+    if (isTooltipVisible) return;
+    
+    clearTimeout(tooltipTimeout);
+    container.classList.add('tooltip-active');
+    isTooltipVisible = true;
+  }
+  
+  function hideTooltip() {
+    if (!isTooltipVisible) return;
+    
+    clearTimeout(tooltipTimeout);
+    tooltipTimeout = setTimeout(() => {
+      container.classList.remove('tooltip-active');
+      isTooltipVisible = false;
+    }, 100);
+  }
+  
+  function hideTooltipImmediately() {
+    clearTimeout(tooltipTimeout);
+    container.classList.remove('tooltip-active');
+    isTooltipVisible = false;
+  }
+  
+  // Click to toggle (great for mobile)
+  infoIcon.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (isTooltipVisible) {
+      hideTooltipImmediately();
+    } else {
+      showTooltip();
+    }
+  });
+  
+  // Hover functionality (desktop)
+  infoIcon.addEventListener('mouseenter', showTooltip);
+  infoIcon.addEventListener('mouseleave', hideTooltip);
+  
+  // Keep tooltip visible when hovering over it
+  infoTooltip.addEventListener('mouseenter', () => {
+    clearTimeout(tooltipTimeout);
+  });
+  infoTooltip.addEventListener('mouseleave', hideTooltip);
+  
+  // Focus/blur for keyboard accessibility
+  infoIcon.addEventListener('focus', showTooltip);
+  infoIcon.addEventListener('blur', hideTooltip);
+  
+  // Hide tooltip when clicking elsewhere
+  document.addEventListener('click', (e) => {
+    if (!infoIcon.contains(e.target) && !infoTooltip.contains(e.target)) {
+      hideTooltipImmediately();
+    }
+  });
+  document.getElementById('fileInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      try {
+        let json = JSON.parse(ev.target.result);
+        if (Array.isArray(json) && typeof json[0] === "object") {
+          const headers = Array.from(
+            json.reduce((set, obj) => {
+              Object.keys(obj).forEach(k => set.add(k));
+              return set;
+            }, new Set())
+          );
+          const data = json.map(obj => headers.map(k => decodeHTMLEntities(obj[k] || "")));
+          renderTable(data, headers);
+        } else {
+          alert("JSON must be a list of objects!");
+        }
+      } catch (err) {
+        alert("Invalid JSON format! 😭");
+      }
+    };
+    reader.readAsText(file);
+  });
+</script>
+</body>
+</html>
