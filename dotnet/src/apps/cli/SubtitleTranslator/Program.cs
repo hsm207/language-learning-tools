@@ -52,10 +52,10 @@ public class Program
             name: "--verbose",
             description: "Enable verbose output for debugging");
 
-        var requestDelayOption = new Option<int>(
-            name: "--request-delay",
-            description: "Delay between API requests in milliseconds to avoid rate limiting (default: 7500ms for 8 RPM)",
-            getDefaultValue: () => 7500);
+        var requestsPerMinuteOption = new Option<int>(
+            name: "--requests-per-minute",
+            description: "Maximum requests per minute to avoid rate limiting (default: 8 RPM for Gemini API)",
+            getDefaultValue: () => 8);
 
         var rootCommand = new RootCommand("Translate subtitle files from one language to another. Outputs JSON with both original and translated text for downstream processing.")
         {
@@ -66,12 +66,12 @@ public class Program
             subtitleFormatOption,
             apiKeyOption,
             verboseOption,
-            requestDelayOption
+            requestsPerMinuteOption
         };
 
         rootCommand.SetHandler(
-            async (input, output, sourceLanguage, targetLanguage, subtitleFormat, apiKey, verbose, requestDelay) =>
-                await HandleTranslateAsync(input, output, sourceLanguage, targetLanguage, subtitleFormat, apiKey, verbose, requestDelay),
+            async (input, output, sourceLanguage, targetLanguage, subtitleFormat, apiKey, verbose, requestsPerMinute) =>
+                await HandleTranslateAsync(input, output, sourceLanguage, targetLanguage, subtitleFormat, apiKey, verbose, requestsPerMinute),
             inputOption, 
             outputOption, 
             sourceLanguageOption, 
@@ -79,7 +79,7 @@ public class Program
             subtitleFormatOption,
             apiKeyOption,
             verboseOption,
-            requestDelayOption);
+            requestsPerMinuteOption);
 
         return await rootCommand.InvokeAsync(args);
     }
@@ -90,8 +90,8 @@ public class Program
     /// <param name="services">The service collection to configure.</param>
     /// <param name="apiKey">The Google Gemini API key.</param>
     /// <param name="verbose">Whether to enable verbose logging.</param>
-    /// <param name="requestDelay">The delay between API requests in milliseconds.</param>
-    private static void ConfigureServices(IServiceCollection services, string apiKey, bool verbose, int requestDelay)
+    /// <param name="requestsPerMinute">The maximum requests per minute for rate limiting.</param>
+    private static void ConfigureServices(IServiceCollection services, string apiKey, bool verbose, int requestsPerMinute)
     {
         // Register logging
         services.AddLogging(builder =>
@@ -122,7 +122,9 @@ public class Program
         {
             var kernel = provider.GetRequiredService<Kernel>();
             var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
-            var delay = TimeSpan.FromMilliseconds(requestDelay);
+            // Convert requests per minute to delay in milliseconds
+            var delayMs = (int)(60_000.0 / requestsPerMinute);
+            var delay = TimeSpan.FromMilliseconds(delayMs);
             return new GeminiSubtitleTranslationService(kernel, temperature: 0.2, requestDelay: delay, loggerFactory: loggerFactory);
         });
         
@@ -140,7 +142,7 @@ public class Program
     /// <param name="subtitleFormat">Input subtitle format (optional).</param>
     /// <param name="apiKey">Google Gemini API key (optional).</param>
     /// <param name="verbose">Enable verbose debug output.</param>
-    /// <param name="requestDelay">Delay between API requests in milliseconds.</param>
+    /// <param name="requestsPerMinute">Maximum requests per minute for rate limiting.</param>
     private static async Task HandleTranslateAsync(
         FileInfo? input, 
         FileInfo? output, 
@@ -149,7 +151,7 @@ public class Program
         string? subtitleFormat,
         string? apiKey,
         bool verbose,
-        int requestDelay)
+        int requestsPerMinute)
     {
         // Set up dependency injection first so we can get our logger
         var geminiApiKey = apiKey ?? Environment.GetEnvironmentVariable("GEMINI_API_KEY");
@@ -160,7 +162,7 @@ public class Program
         }
 
         var services = new ServiceCollection();
-        ConfigureServices(services, geminiApiKey, verbose, requestDelay);
+        ConfigureServices(services, geminiApiKey, verbose, requestsPerMinute);
         var serviceProvider = services.BuildServiceProvider();
         var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
 
@@ -173,7 +175,7 @@ public class Program
             logger.LogDebug("Target language: {TargetLanguage}", targetLanguage);
             logger.LogDebug("Subtitle format: {SubtitleFormat}", subtitleFormat ?? "auto-detect");
             logger.LogDebug("API key provided: {ApiKeyProvided}", !string.IsNullOrWhiteSpace(apiKey) ? "Yes" : "Via environment");
-            logger.LogDebug("Request delay: {RequestDelay}ms", requestDelay);
+            logger.LogDebug("Requests per minute: {RequestsPerMinute} RPM", requestsPerMinute);
 
             if (input == null)
             {
