@@ -18,14 +18,13 @@ namespace LanguageLearningTools.Domain.Tests
                 new SubtitleLine(TimeSpan.Zero, TimeSpan.Zero, "Hallo Welt"),
                 new SubtitleLine(TimeSpan.Zero, TimeSpan.Zero, "Wie geht's?")
             };
-            var request = new SubtitleBatchRequest
-            {
-                ContextLines = new List<SubtitleLine>(),
-                LinesToTranslate = lines
-            };
+            var batch = new SubtitleBatch(
+                new List<SubtitleLine>(), // context
+                lines // lines to translate
+            );
 
             // Act
-            var result = await service.TranslateBatchAsync(request, Lang.German, Lang.English);
+            var result = await service.TranslateBatchAsync(batch, Lang.German, Lang.English);
 
             // Assert
             Assert.Equal(2, result.TranslatedLines.Count);
@@ -34,30 +33,22 @@ namespace LanguageLearningTools.Domain.Tests
         }
 
         [Fact]
-        public async Task TranslateBatchAsync_Should_Throw_On_Null_Request()
-        {
-            var service = new DummySubtitleTranslationService();
-            await Assert.ThrowsAsync<ArgumentNullException>(() => service.TranslateBatchAsync(null!, Lang.German, Lang.English));
-        }
-
-        [Fact]
         public async Task TranslateBatchAsync_Should_Throw_On_Empty_Lines()
         {
             var service = new DummySubtitleTranslationService();
-            var request = new SubtitleBatchRequest { ContextLines = new List<SubtitleLine>(), LinesToTranslate = new List<SubtitleLine>() };
-            await Assert.ThrowsAsync<ArgumentException>(() => service.TranslateBatchAsync(request, Lang.German, Lang.English));
+            var batch = new SubtitleBatch(new List<SubtitleLine>(), new List<SubtitleLine>());
+            await Assert.ThrowsAsync<ArgumentException>(() => service.TranslateBatchAsync(batch, Lang.German, Lang.English));
         }
 
         // Dummy implementation for testing
         private class DummySubtitleTranslationService : ISubtitleTranslationService
         {
-            public Task<SubtitleBatchResponse> TranslateBatchAsync(SubtitleBatchRequest request, Lang sourceLanguage, Lang targetLanguage)
+            public Task<SubtitleBatchResponse> TranslateBatchAsync(SubtitleBatch batch, Lang sourceLanguage, Lang targetLanguage)
             {
-                if (request == null) throw new ArgumentNullException(nameof(request));
-                if (request.LinesToTranslate == null || request.LinesToTranslate.Count == 0)
-                    throw new ArgumentException("LinesToTranslate must not be empty.", nameof(request));
+                if (batch.Lines == null || batch.Lines.Count == 0)
+                    throw new ArgumentException("Lines to translate must not be empty.", nameof(batch));
                 var translated = new List<SubtitleLine>();
-                foreach (var line in request.LinesToTranslate)
+                foreach (var line in batch.Lines)
                 {
                     translated.Add(new SubtitleLine(line.Start, line.End, line.Text, $"{line.Text} [{targetLanguage}]"));
                 }

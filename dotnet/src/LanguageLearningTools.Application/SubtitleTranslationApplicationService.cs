@@ -80,15 +80,8 @@ namespace LanguageLearningTools.Application
 
             foreach (var batch in batches)
             {
-                // Create the batch request with the lines from the batch
-                var batchRequest = new SubtitleBatchRequest
-                {
-                    ContextLines = batch.Context.ToList(),
-                    LinesToTranslate = batch.Lines.ToList()
-                };
-
-                // Get the translation for this batch
-                var batchResponse = await _translationService.TranslateBatchAsync(batchRequest, sourceLanguage, targetLanguage);
+                // Get the translation for this batch - no more unnecessary conversion!
+                var batchResponse = await _translationService.TranslateBatchAsync(batch, sourceLanguage, targetLanguage);
 
                 // Add the translated lines to our collection
                 translatedLines.AddRange(batchResponse.TranslatedLines);

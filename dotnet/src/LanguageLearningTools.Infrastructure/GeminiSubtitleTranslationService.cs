@@ -40,19 +40,18 @@ namespace LanguageLearningTools.Infrastructure
 
         /// <inheritdoc />
         public async Task<SubtitleBatchResponse> TranslateBatchAsync(
-            SubtitleBatchRequest request, Lang sourceLanguage, Lang targetLanguage)
+            SubtitleBatch batch, Lang sourceLanguage, Lang targetLanguage)
         {
-            if (request == null) throw new ArgumentNullException(nameof(request));
-            if (request.LinesToTranslate == null || request.LinesToTranslate.Count == 0)
-                throw new ArgumentException("LinesToTranslate must not be empty.", nameof(request));
+            if (batch.Lines == null || batch.Lines.Count == 0)
+                throw new ArgumentException("Lines to translate must not be empty.", nameof(batch));
 
             _logger.LogInformation("Starting translation batch from {SourceLanguage} to {TargetLanguage} with {LineCount} lines and {ContextCount} context lines",
-                sourceLanguage, targetLanguage, request.LinesToTranslate.Count, request.ContextLines.Count);
+                sourceLanguage, targetLanguage, batch.Lines.Count, batch.Context.Count);
 
-            // Map domain DTOs to Gemini DTOs (string timestamps)
+            // Map domain model directly to Gemini DTOs (string timestamps)
             var geminiRequest = new GeminiSubtitleBatchRequest(
-                request.ContextLines.ConvertAll(GeminiSubtitleLineMapper.ToGeminiDto),
-                request.LinesToTranslate.ConvertAll(GeminiSubtitleLineMapper.ToGeminiDto)
+                batch.Context.Select(GeminiSubtitleLineMapper.ToGeminiDto).ToList(),
+                batch.Lines.Select(GeminiSubtitleLineMapper.ToGeminiDto).ToList()
             );
 
             // Use GeminiPromptFormatter for prompt and variables
@@ -120,7 +119,7 @@ namespace LanguageLearningTools.Infrastructure
                 throw new InvalidOperationException("No translations received from API.");
             }
 
-            var expectedCount = request.LinesToTranslate.Count;
+            var expectedCount = batch.Lines.Count;
             var actualCount = geminiResponse.TranslatedLines.Count;
 
             if (actualCount != expectedCount)
@@ -131,7 +130,7 @@ namespace LanguageLearningTools.Infrastructure
 
                 // Log the actual response for debugging
                 _logger.LogDebug("Expected lines: {ExpectedLines}",
-                    string.Join(", ", request.LinesToTranslate.Select(l => $"'{l.Text}'")));
+                    string.Join(", ", batch.Lines.Select(l => $"'{l.Text}'")));
                 _logger.LogDebug("Received translations: {ReceivedTranslations}",
                     string.Join(", ", geminiResponse.TranslatedLines.Select(l => $"'{l.Text}' -> '{l.TranslatedText}'")));
 

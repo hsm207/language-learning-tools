@@ -199,19 +199,18 @@ namespace LanguageLearningTools.Infrastructure.IntegrationTests
             Assert.True(allLines.Count == 3, "SampleThreeLine.ttml2 should have 3 subtitle lines.");
 
             // Use line 1 as context, lines 2 and 3 as lines to translate (English input)
-            var request = new SubtitleBatchRequest
-            {
-                ContextLines = new List<SubtitleLine> { allLines[0] },
-                LinesToTranslate = new List<SubtitleLine> { allLines[1], allLines[2] }
-            };
+            var batch = new SubtitleBatch(
+                new List<SubtitleLine> { allLines[0] }, // context
+                new List<SubtitleLine> { allLines[1], allLines[2] } // lines to translate
+            );
 
             // Act
-            var response = await _service.TranslateBatchAsync(request, Lang.English, Lang.German);
+            var response = await _service.TranslateBatchAsync(batch, Lang.English, Lang.German);
 
             // Assert: Check that translations are non-empty, different from input, and in the expected order
-            Assert.Equal(request.LinesToTranslate.Count, response.TranslatedLines.Count);
-            Assert.NotEqual(request.LinesToTranslate[0].Text.Trim(), response.TranslatedLines[0].TranslatedText.Trim());
-            Assert.NotEqual(request.LinesToTranslate[1].Text.Trim(), response.TranslatedLines[1].TranslatedText.Trim());
+            Assert.Equal(batch.Lines.Count, response.TranslatedLines.Count);
+            Assert.NotEqual(batch.Lines[0].Text.Trim(), response.TranslatedLines[0].TranslatedText.Trim());
+            Assert.NotEqual(batch.Lines[1].Text.Trim(), response.TranslatedLines[1].TranslatedText.Trim());
             // Accept both singular and plural, with or without umlaut, for robustness
             var rainbowVariants = new[] { "Regenbogen", "Regenbögen" };
             Assert.Contains(rainbowVariants,
@@ -221,8 +220,8 @@ namespace LanguageLearningTools.Infrastructure.IntegrationTests
             Assert.Contains("Pizza", response.TranslatedLines[1].TranslatedText, System.StringComparison.InvariantCultureIgnoreCase);
 
             // Additional: Ensure output is not English (basic check)
-            Assert.DoesNotContain(request.LinesToTranslate[0].Text, response.TranslatedLines[0].TranslatedText, StringComparison.InvariantCultureIgnoreCase);
-            Assert.DoesNotContain(request.LinesToTranslate[1].Text, response.TranslatedLines[1].TranslatedText, StringComparison.InvariantCultureIgnoreCase);
+            Assert.DoesNotContain(batch.Lines[0].Text, response.TranslatedLines[0].TranslatedText, StringComparison.InvariantCultureIgnoreCase);
+            Assert.DoesNotContain(batch.Lines[1].Text, response.TranslatedLines[1].TranslatedText, StringComparison.InvariantCultureIgnoreCase);
         }
 
         [Fact]
@@ -231,17 +230,16 @@ namespace LanguageLearningTools.Infrastructure.IntegrationTests
             // Test lines with emojis and special characters
             var emojiLine = new SubtitleLine(TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(2), "🦄 Rainbows are just unicorn sneezes! 🌈");
             var specialCharLine = new SubtitleLine(TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(4), "Café déjà vu – naïve façade! ¿Cómo estás? 你好！");
-            var request = new SubtitleBatchRequest
-            {
-                ContextLines = new List<SubtitleLine>(),
-                LinesToTranslate = new List<SubtitleLine> { emojiLine, specialCharLine }
-            };
+            var batch = new SubtitleBatch(
+                new List<SubtitleLine>(), // context
+                new List<SubtitleLine> { emojiLine, specialCharLine } // lines to translate
+            );
 
             // Act
-            var response = await _service.TranslateBatchAsync(request, Lang.English, Lang.German);
+            var response = await _service.TranslateBatchAsync(batch, Lang.English, Lang.German);
 
             // Assert: Ensure emojis and special characters are preserved in the translation
-            Assert.Equal(request.LinesToTranslate.Count, response.TranslatedLines.Count);
+            Assert.Equal(batch.Lines.Count, response.TranslatedLines.Count);
             Assert.Contains("🦄", response.TranslatedLines[0].TranslatedText);
             Assert.Contains("🌈", response.TranslatedLines[0].TranslatedText);
             Assert.Contains("Café", response.TranslatedLines[1].TranslatedText, StringComparison.InvariantCultureIgnoreCase);
@@ -261,18 +259,17 @@ namespace LanguageLearningTools.Infrastructure.IntegrationTests
             var fakeService = new GeminiSubtitleTranslationService(fakeKernel, temperature: 0, loggerFactory: _loggerFactory);
 
             var testLine = new SubtitleLine(TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(2), "Hallo Welt!");
-            var request = new SubtitleBatchRequest
-            {
-                ContextLines = new List<SubtitleLine>(),
-                LinesToTranslate = new List<SubtitleLine> { testLine }
-            };
+            var batch = new SubtitleBatch(
+                new List<SubtitleLine>(), // context
+                new List<SubtitleLine> { testLine } // lines to translate
+            );
 
             // Act & Assert: We expect this to throw an exception after retries
             // Note: This will take a while due to retry policy (30s + 60s + 120s + execution time)
             // but we want to see the exact exception details
             var exception = await Assert.ThrowsAnyAsync<Exception>(async () =>
             {
-                await fakeService.TranslateBatchAsync(request, Lang.German, Lang.English);
+                await fakeService.TranslateBatchAsync(batch, Lang.German, Lang.English);
             });
 
             // Log the full exception details to understand what's happening
@@ -334,16 +331,15 @@ namespace LanguageLearningTools.Infrastructure.IntegrationTests
             new(TimeSpan.Parse("00:08:12.019"), TimeSpan.Parse("00:08:13.437"), "geplante Zusammenlegung der Abteilung")
         };
 
-            var request = new SubtitleBatchRequest
-            {
-                ContextLines = contextLines,
-                LinesToTranslate = linesToTranslate
-            };
+            var batch = new SubtitleBatch(
+                contextLines, // context
+                linesToTranslate // lines to translate
+            );
 
             // Act & Assert: This should either succeed with 15 translations or fail gracefully
             var exception = await Record.ExceptionAsync(async () =>
             {
-                var result = await _service.TranslateBatchAsync(request, Lang.German, Lang.English);
+                var result = await _service.TranslateBatchAsync(batch, Lang.German, Lang.English);
 
                 // If we get here, verify we got the expected number of translations
                 Assert.Equal(15, result.TranslatedLines.Count);
