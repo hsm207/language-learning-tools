@@ -163,7 +163,7 @@ namespace LanguageLearningTools.Infrastructure
                 if (timeSinceLastRequest < _requestDelay)
                 {
                     var delayNeeded = _requestDelay - timeSinceLastRequest;
-                    _logger.LogDebug("Rate limiting: waiting {DelayMs}ms before next API request", delayNeeded.TotalMilliseconds);
+                    _logger.LogDebug("Rate limiting: waiting {DelayMs:N1}ms before next API request", delayNeeded.TotalMilliseconds);
                     await Task.Delay(delayNeeded);
                 }
                 _lastRequestTime = DateTime.UtcNow;
