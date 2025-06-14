@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <NoWarn>$(NoWarn);SKEXP0070;SKEXP0001;SKEXP0002;SKEXP0003;SKEXP0004</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../LanguageLearningTools.Domain/LanguageLearningTools.Domain.csproj" />
+    <ProjectReference Include="../../submodules/semantic-kernel/dotnet/src/SemanticKernel.Abstractions/SemanticKernel.Abstractions.csproj" />
+    <ProjectReference Include="../../submodules/semantic-kernel/dotnet/src/SemanticKernel.Core/SemanticKernel.Core.csproj" />
+    <ProjectReference Include="../../submodules/semantic-kernel/dotnet/src/Connectors/Connectors.Google/Connectors.Google.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Polly" Version="8.6.0" />
+  </ItemGroup>
+</Project>
