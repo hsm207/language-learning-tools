@@ -107,9 +107,7 @@ namespace LanguageLearningTools.Infrastructure
             {
                 var promptFunction = _kernel.CreateFunctionFromPrompt(promptConfig);
                 var result = await promptFunction.InvokeAsync(_kernel, kernelArguments);
-                var outStr = result.ToString();
-                _logger.LogDebug("Gemini API response received: {Response}", outStr);
-                return outStr;
+                return result.ToString();
             });
 
             var geminiResponse = System.Text.Json.JsonSerializer.Deserialize<GeminiSubtitleBatchResponse>(output);
@@ -118,6 +116,9 @@ namespace LanguageLearningTools.Infrastructure
                 _logger.LogError("Translation failed: No translations received from API");
                 throw new InvalidOperationException("No translations received from API.");
             }
+
+            // Log the response - ToString() override will show beautiful JSON
+            _logger.LogDebug("Gemini API response received: {Response}", geminiResponse);
 
             var expectedCount = batch.Lines.Count;
             var actualCount = geminiResponse.TranslatedLines.Count;
