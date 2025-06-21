@@ -123,42 +123,142 @@
     .upload input[type="file"] {
       margin-left: 1em;
     }
+    .drop-zone {
+      border: 2px dashed #555;
+      border-radius: 12px;
+      padding: 2em;
+      text-align: center;
+      transition: all 0.3s ease;
+      background: #1a1b1f;
+      margin-bottom: 1em;
+    }
+    .drop-zone.drag-over {
+      border-color: #3a88fd;
+      background: #252830;
+      box-shadow: 0 0 20px rgba(58, 136, 253, 0.2);
+    }
+    .drop-zone p {
+      margin: 0.5em 0;
+      color: #ccc;
+    }
+    .feedback {
+      margin: 1em 0;
+      padding: 0.8em 1.2em;
+      border-radius: 8px;
+      font-weight: bold;
+      display: none;
+    }
+    .feedback.success {
+      background: linear-gradient(135deg, #4caf50, #45a049);
+      color: #fff;
+      display: block;
+    }
+    .feedback.error {
+      background: linear-gradient(135deg, #f44336, #d32f2f);
+      color: #fff;
+      display: block;
+    }
+    .export-btn {
+      background: linear-gradient(135deg, #3a88fd, #e040fb);
+      color: #fff;
+      border: none;
+      padding: 0.8em 1.5em;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      margin: 1em 0;
+      display: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .export-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 16px rgba(58, 136, 253, 0.3);
+    }
+    .export-btn:active {
+      transform: scale(0.98);
+    }
     @media (max-width: 600px) {
       .info-tooltip { left: 20px; transform: none; right: 20px; width: auto; }
       h1 { font-size: 1.07em; }
       .info-wrap { flex-direction: column; }
+      .drop-zone { padding: 1.5em; }
     }
   </style>
 </head>
 <body>
-<div class="container">
-  <div class="info-wrap">
-    <h1>Subtitle JSON Viewer</h1>
-    <span tabindex="0" class="info-icon" aria-label="Usage info">&#8505;</span>
-    <div class="info-tooltip">
-      <b>How it works:</b><br>
-      • <b>Upload</b> a <b>JSON file</b> containing subtitle translations from SubtitleTranslator CLI.<br>
-      • Each object key becomes a <b>table column</b> (StartTime, EndTime, OriginalText, TranslatedText).<br>
-      • Column headers are generated from the key names.<br>
-      • All values are auto-decoded (so ü = ü, etc).<br>
-      • <b>Copy any column</b>: Click the header, drag down, Ctrl+C.<br><br>
-      <i>Perfect for subtitle translations, language learning transcripts, and exported spreadsheets. Upload your SubtitleTranslator output now!</i>
+<header>
+  <div class="container" role="main">
+    <div class="info-wrap">
+      <h1>Subtitle JSON Viewer</h1>
+      <span tabindex="0" class="info-icon" aria-label="Usage info">&#8505;</span>
+      <div class="info-tooltip" role="tooltip">
+        <b>How it works:</b><br>
+        • <b>Upload</b> a <b>JSON file</b> containing subtitle translations from SubtitleTranslator CLI.<br>
+        • Each object key becomes a <b>table column</b> (StartTime, EndTime, OriginalText, TranslatedText).<br>
+        • Column headers are generated from the key names.<br>
+        • All values are auto-decoded (so ü = ü, etc).<br>
+        • <b>Copy any column</b>: Click the header, drag down, Ctrl+C.<br><br>
+        <i>Perfect for subtitle translations, language learning transcripts, and exported spreadsheets. Upload your SubtitleTranslator output now!</i>
+      </div>
     </div>
   </div>
-  <div class="upload">
-    <label>Upload your SubtitleTranslator JSON file:
-      <input id="fileInput" type="file" accept=".json" />
-    </label>
-  </div>
-  <div id="hot"></div>
-  <div class="tip">
-    Tip: To copy a whole column, click its header and drag down, then <b>Ctrl+C</b>! Paste into Excel, Google Sheets, or Notion.<br>
-    <span style="opacity:0.7;">(Works best in Chrome or Edge!)</span>
-  </div>
-</div>
+</header>
+<main>
+  <section class="container">
+    <form class="upload" aria-label="Upload SubtitleTranslator JSON file">
+      <div class="drop-zone" id="dropZone">
+        <p>📁 Drag & drop your JSON file here, or click to browse</p>
+        <label for="fileInput">Upload your SubtitleTranslator JSON file:</label>
+        <input id="fileInput" type="file" accept=".json" />
+      </div>
+      <div class="feedback" id="feedback" role="alert" aria-live="polite"></div>
+      <button class="export-btn" id="exportBtn" type="button">💾 Export as CSV</button>
+    </form>
+    <section id="hot" aria-label="Subtitle Table"></section>
+    <div class="tip">
+      Tip: To copy a whole column, click its header and drag down, then <b>Ctrl+C</b>! Paste into Excel, Google Sheets, or Notion.<br>
+      <span style="opacity:0.7;">(Works best in Chrome or Edge!)</span>
+    </div>
+  </section>
+</main>
 <script src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
 <script>
   let hot;
+  let currentData = null;
+  let currentHeaders = null;
+  
+  function showFeedback(message, type) {
+    const feedback = document.getElementById('feedback');
+    feedback.textContent = message;
+    feedback.className = `feedback ${type}`;
+    feedback.style.display = 'block';
+  }
+  
+  function hideFeedback() {
+    const feedback = document.getElementById('feedback');
+    feedback.style.display = 'none';
+  }
+  
+  function showExportButton() {
+    const exportBtn = document.getElementById('exportBtn');
+    exportBtn.style.display = 'inline-block';
+  }
+  
+  function exportToCSV() {
+    if (!currentData || !currentHeaders) return;
+    
+    const csvContent = [
+      currentHeaders.join(','),
+      ...currentData.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'subtitle_translations.csv';
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
   function decodeHTMLEntities(text) {
     if (typeof text !== 'string') return text;
     var textarea = document.createElement('textarea');
@@ -168,6 +268,10 @@
   function renderTable(data, colHeaders) {
     const container = document.getElementById('hot');
     if (hot) hot.destroy();
+    
+    currentData = data;
+    currentHeaders = colHeaders;
+    
     hot = new Handsontable(container, {
       data: data,
       colHeaders: colHeaders,
@@ -185,6 +289,9 @@
       columnSorting: true,
       columns: colHeaders.map(() => ({ width: 180 })),
     });
+    
+    showFeedback(`✅ Successfully loaded ${data.length} subtitle entries!`, 'success');
+    showExportButton();
   }
   // Demo data matching SubtitleTranslator CLI output format
   const sampleObjects = [
@@ -194,6 +301,63 @@
   ];
   const keys = Object.keys(sampleObjects[0]);
   renderTable(sampleObjects.map(obj => keys.map(k => decodeHTMLEntities(obj[k]))), keys);
+  
+  // Drag and drop functionality
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+  
+  dropZone.addEventListener('click', () => fileInput.click());
+  
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('drag-over');
+  });
+  
+  dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('drag-over');
+  });
+  
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      processFile(files[0]);
+    }
+  });
+  
+  // Export button
+  document.getElementById('exportBtn').addEventListener('click', exportToCSV);
+  
+  function processFile(file) {
+    if (!file.name.toLowerCase().endsWith('.json')) {
+      showFeedback('❌ Please select a JSON file!', 'error');
+      return;
+    }
+    
+    hideFeedback();
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      try {
+        let json = JSON.parse(ev.target.result);
+        if (Array.isArray(json) && json.length > 0 && typeof json[0] === "object") {
+          const headers = Array.from(
+            json.reduce((set, obj) => {
+              Object.keys(obj).forEach(k => set.add(k));
+              return set;
+            }, new Set())
+          );
+          const data = json.map(obj => headers.map(k => decodeHTMLEntities(obj[k] || "")));
+          renderTable(data, headers);
+        } else {
+          showFeedback('❌ JSON must be an array of objects!', 'error');
+        }
+      } catch (err) {
+        showFeedback('❌ Invalid JSON format! Please check your file.', 'error');
+      }
+    };
+    reader.readAsText(file);
+  }
   // Info tooltip show/hide with smooth interactions
   const infoIcon = document.querySelector('.info-icon');
   const infoTooltip = document.querySelector('.info-tooltip');
@@ -259,27 +423,7 @@
   document.getElementById('fileInput').addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(ev) {
-      try {
-        let json = JSON.parse(ev.target.result);
-        if (Array.isArray(json) && typeof json[0] === "object") {
-          const headers = Array.from(
-            json.reduce((set, obj) => {
-              Object.keys(obj).forEach(k => set.add(k));
-              return set;
-            }, new Set())
-          );
-          const data = json.map(obj => headers.map(k => decodeHTMLEntities(obj[k] || "")));
-          renderTable(data, headers);
-        } else {
-          alert("JSON must be a list of objects!");
-        }
-      } catch (err) {
-        alert("Invalid JSON format! 😭");
-      }
-    };
-    reader.readAsText(file);
+    processFile(file);
   });
 </script>
 </body>
