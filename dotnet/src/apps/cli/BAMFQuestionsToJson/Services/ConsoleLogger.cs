@@ -34,4 +34,14 @@ internal class ConsoleLogger : ILogger
     {
         AnsiConsole.MarkupLine($"[red]{message}[/]");
     }
+
+    /// <summary>
+    /// Logs an error message asynchronously.
+    /// </summary>
+    /// <param name="message">The message to log.</param>
+    public async Task LogErrorAsync(string message)
+    {
+        AnsiConsole.MarkupLine($"[red]{message}[/]");
+        await Task.CompletedTask.ConfigureAwait(false);
+    }
 }

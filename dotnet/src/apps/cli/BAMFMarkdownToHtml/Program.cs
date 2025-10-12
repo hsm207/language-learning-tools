@@ -77,7 +77,7 @@ namespace BAMFMarkdownToHtml
                 // Handle input source (file or console)
                 if (input != null && input.Exists)
                 {
-                    markdownInput = File.ReadAllText(input.FullName);
+                    markdownInput = await File.ReadAllTextAsync(input.FullName);
                 }
                 else
                 {
@@ -116,7 +116,7 @@ namespace BAMFMarkdownToHtml
                 }
                 else
                 {
-                    File.WriteAllText(outputPath, html);
+                    await File.WriteAllTextAsync(outputPath, html);
                     Console.WriteLine($"HTML has been written to: {outputPath}");
                 }
             }, inputOption, outputOption);

@@ -21,48 +21,60 @@ internal static class Program
     /// <returns>0 if execution was successful, non-zero if an error occurred.</returns>
     public static async Task<int> Main(string[] args)
     {
+        // Initialize basic services
+        ILogger logger = new ConsoleLogger();
+        IErrorHandler errorHandler = new ErrorHandler(logger);
+        #pragma warning disable CA1859 // Using interface for decoupling.
+        ICommandLineConfiguration commandLineConfig = new Configuration.CommandLineConfiguration();
+#pragma warning restore CA1859
+        
+        return await RunApplicationAsync(args, new ServiceFactory(new Parser(commandLineConfig.BuildRootCommand()).Parse(args)), commandLineConfig, logger, errorHandler).ConfigureAwait(false);
+    }
+
+    internal static async Task<int> RunApplicationAsync(
+        string[] args,
+        IServiceFactory serviceFactory,
+        ICommandLineConfiguration commandLineConfig,
+        ILogger logger,
+        IErrorHandler errorHandler)
+    {
         try
         {
-            // Initialize basic services
-            ILogger logger = new ConsoleLogger();
-            ErrorHandler errorHandler = new ErrorHandler(logger);
-            var commandLineConfig = new Configuration.CommandLineConfiguration();
-
             // Build and configure command line interface
             var rootCommand = commandLineConfig.BuildRootCommand();
+            commandLineConfig.RegisterCommandHandler(rootCommand, serviceFactory);
 
-            try
-            {
-                // Create service factory with parsed configuration
-                ServiceFactory serviceFactory = new ServiceFactory(rootCommand.Parse(args));
-                commandLineConfig.RegisterCommandHandler(rootCommand, serviceFactory);
-
-                // Execute command
-                return await rootCommand.InvokeAsync(args).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException ex)
-            {
-                return errorHandler.HandleException(ex);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return errorHandler.HandleException(ex);
-            }
-            catch (IOException ex)
-            {
-                await Console.Error.WriteLineAsync($"File operation error: {ex.Message}").ConfigureAwait(false);
-                return 1;
-            }
+            // Execute command
+            return await rootCommand.InvokeAsync(args).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException ex)
+        {
+            return errorHandler.HandleException(ex);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return errorHandler.HandleException(ex);
+        }
+        catch (IOException ex)
+        {
+            await logger.LogErrorAsync($"File operation error: {ex.Message}").ConfigureAwait(false);
+            return 1;
         }
         catch (OutOfMemoryException ex)
         {
-            await Console.Error.WriteLineAsync($"Critical error - out of memory: {ex.Message}").ConfigureAwait(false);
+            await logger.LogErrorAsync($"Critical error - out of memory: {ex.Message}").ConfigureAwait(false);
             return 2;
         }
         catch (ApplicationException ex)
         {
-            await Console.Error.WriteLineAsync($"Application error: {ex.Message}").ConfigureAwait(false);
+            await logger.LogErrorAsync($"Application error: {ex.Message}").ConfigureAwait(false);
             return 3;
         }
+        #pragma warning disable CA1031 // General exception catch is acceptable for top-level error handling.
+        catch (Exception ex)
+        {
+            return errorHandler.HandleException(ex);
+        }
+#pragma warning restore CA1031
     }
 }
