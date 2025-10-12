@@ -24,7 +24,7 @@ namespace SubtitleTranslator.Tests
             var result = Program.GenerateOutputFileName(inputFile);
 
             // Assert
-            result.Name.Should().Be("subtitle_translated.ttml");
+            result.Name.Should().Be("subtitle_translated.json");
             result.DirectoryName.Should().Be("/path/to");
         }
 
@@ -41,7 +41,7 @@ namespace SubtitleTranslator.Tests
             var result = Program.GenerateOutputFileName(inputFile);
 
             // Assert
-            result.Name.Should().Be("subtitle_translated");
+            result.Name.Should().Be("subtitle_translated.json");
             result.DirectoryName.Should().Be("/path/to");
         }
 
