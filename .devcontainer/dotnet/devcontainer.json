@@ -1,14 +1,29 @@
 {
     "name": ".NET Devcontainer",
-    "image": "mcr.microsoft.com/dotnet/core/sdk:3.1",
-    "features": {},
-    "settings": {
-        "dotnet.defaultSolution": "/workspace/solution.sln"
+    "image": "mcr.microsoft.com/devcontainers/dotnet:latest",
+    "features": {
+        "ghcr.io/devcontainers/features/node:1": {
+            "version": "latest"
+        }
     },
-    "extensions": [
-        "ms-dotnettools.csharp",
-        "ms-vscode.vscode-typescript-tslint-plugin"
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-dotnettools.csdevkit",
+                "google.gemini-cli-vscode-ide-companion",
+                "google.geminicodeassist"
+            ],
+            "settings": {
+                "dotnet.defaultSolution": "/workspaces/language-learning-tools/dotnet/language-learning-tools.sln"
+            }
+        }
+    },
+    "mounts": [
+        // {
+        //     "type": "bind",
+        //     "source": "${localEnv:HOME}/.gemini/settings.json",
+        //     "target": "/home/vscode/.gemini/settings.json"
+        // }
     ],
-    "postCreateCommand": "dotnet restore",
-    "remoteUser": "vscode"
+    "postCreateCommand": "npm install -g @google/gemini-cli"
 }
