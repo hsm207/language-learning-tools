@@ -86,22 +86,22 @@ internal static class ProgramOrchestrator
         }
         catch (ArgumentException ex)
         {
-            logger.LogError($"Invalid argument: {ex.Message}");
+            await logger.LogErrorAsync($"Invalid argument: {ex.Message}").ConfigureAwait(false);
             return errorHandler.HandleException(ex);
         }
         catch (InvalidOperationException ex)
         {
-            logger.LogError($"Operation error: {ex.Message}");
+            await logger.LogErrorAsync($"Operation error: {ex.Message}").ConfigureAwait(false);
             return errorHandler.HandleException(ex);
         }
         catch (IOException ex)
         {
-            logger.LogError($"IO error: {ex.Message}");
+            await logger.LogErrorAsync($"IO error: {ex.Message}").ConfigureAwait(false);
             return errorHandler.HandleException(ex);
         }
         catch (UnauthorizedAccessException ex)
         {
-            logger.LogError($"Access denied: {ex.Message}");
+            await logger.LogErrorAsync($"Access denied: {ex.Message}").ConfigureAwait(false);
             return errorHandler.HandleException(ex);
         }
     }

@@ -11,7 +11,7 @@ namespace BAMFQuestionsToJson.IntegrationTests
     public class ProgramIntegrationTests
     {
         [Fact]
-        public async Task RunApplicationAsync_SuccessfulCommand_ReturnsZero()
+        public async Task RunApplicationAsyncSuccessfulCommandReturnsZero()
         {
             // Arrange
             var args = new[] { "--help" };
@@ -57,7 +57,7 @@ namespace BAMFQuestionsToJson.IntegrationTests
         }
         
         [Fact]
-        public async Task RunApplicationAsync_ExceptionThrown_HandlesError()
+        public async Task RunApplicationAsyncExceptionThrownHandlesError()
         {
             // Arrange
             var args = new[] { "--invalid-command" };
@@ -68,7 +68,7 @@ namespace BAMFQuestionsToJson.IntegrationTests
             var mockCommandLineConfig = new Mock<ICommandLineConfiguration>();
             mockCommandLineConfig
                 .Setup(c => c.BuildRootCommand())
-                .Throws(new Exception("Test exception"));
+                .Throws(new InvalidOperationException("Test exception"));
                 
             var mockErrorHandler = new Mock<IErrorHandler>();
             mockErrorHandler

@@ -40,7 +40,9 @@ internal static class KernelFactory
         {
             if (!configService.HasRequiredConfiguration())
             {
+                #pragma warning disable CA1303 // Do not pass literals as localized parameters
                 Console.WriteLine(ConfigurationMissingError);
+#pragma warning restore CA1303 // Do not pass literals as localized parameters
                 return null;
             }
 

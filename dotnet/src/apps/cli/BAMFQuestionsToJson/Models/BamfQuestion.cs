@@ -1,3 +1,4 @@
+#pragma warning disable CA1515 // Types should be internal
 using System.Text.Json.Serialization;
 
 namespace LanguageLearningTools.BAMFQuestionsToJson.Models;

@@ -19,7 +19,7 @@ public class ProgramTests
         Assert.Equal("Berlin", _defaultConfig.BundesLand);
         Assert.Equal("screenshots", _defaultConfig.ScreenshotDirectory);
         Assert.Equal("#P1_BUL_ID", _defaultConfig.StateDropdownSelector);
-        Assert.Equal("#R57608719341524241", _defaultConfig.QuestionElementSelector);
+        Assert.Equal("#R59645205843215396", _defaultConfig.QuestionElementSelector);
         Assert.Equal("nächste Aufgabe >", _defaultConfig.NextQuestionButtonText);
         Assert.Equal("Zum Fragenkatalog", _defaultConfig.StartButtonText);
         Assert.Equal(310, _defaultConfig.TotalQuestions);
@@ -32,7 +32,7 @@ public class ProgramTests
         using var playwright = await Playwright.CreateAsync();
         var browser = await playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions 
         { 
-            Headless = false
+            Headless = true
         });
         var page = await browser.NewPageAsync();
 

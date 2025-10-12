@@ -14,7 +14,7 @@ public class KernelFactoryTests
     [InlineData(null, "valid-key")]
     [InlineData("valid-model", null)]
     [InlineData(null, null)]
-    public void Create_WithInvalidConfiguration_ReturnsNull(string? modelId, string? apiKey)
+    public void CreateWithInvalidConfigurationReturnsNull(string? modelId, string? apiKey)
     {
         // Arrange
         var configServiceMock = new Mock<ConfigurationService>();
@@ -31,7 +31,7 @@ public class KernelFactoryTests
     }
 
     [Fact]
-    public void Create_WithValidConfiguration_ReturnsKernel()
+    public void CreateWithValidConfigurationReturnsKernel()
     {
         // Arrange
         var configServiceMock = new Mock<ConfigurationService>();
@@ -52,12 +52,12 @@ public class KernelFactoryTests
 
 
     [Fact]
-    public void Create_WithException_ReturnsNullAndLogsError()
+    public void CreateWithExceptionReturnsNullAndLogsError()
     {
         // Arrange
         var configServiceMock = new Mock<ConfigurationService>();
         configServiceMock.Setup(x => x.HasRequiredConfiguration()).Returns(true);
-        configServiceMock.Setup(x => x.GetGoogleAiModelId()).Throws(new Exception("Test exception"));
+        configServiceMock.Setup(x => x.GetGoogleAiModelId()).Throws(new InvalidOperationException("Test exception"));
 
         // Act
         var kernel = KernelFactory.Create(configServiceMock.Object);
@@ -69,7 +69,7 @@ public class KernelFactoryTests
     }
 
     [Fact]
-    public void Create_WithEmptyStrings_ReturnsNull()
+    public void CreateWithEmptyStringsReturnsNull()
     {
         // Arrange
         var configServiceMock = new Mock<ConfigurationService>();

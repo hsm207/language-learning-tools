@@ -22,4 +22,10 @@ internal interface ILogger
     /// </summary>
     /// <param name="message">The message to log.</param>
     void LogError(string message);
+
+    /// <summary>
+    /// Logs an error message asynchronously.
+    /// </summary>
+    /// <param name="message">The message to log.</param>
+    Task LogErrorAsync(string message);
 }

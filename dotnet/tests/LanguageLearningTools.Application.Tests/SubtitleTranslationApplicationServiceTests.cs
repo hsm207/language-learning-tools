@@ -71,7 +71,7 @@ namespace LanguageLearningTools.Application.Tests
                 .Returns(batches);
 
             _mockTranslationService
-                .Setup(x => x.TranslateBatchAsync(It.IsAny<SubtitleBatchRequest>(), Lang.German, Lang.English))
+                .Setup(x => x.TranslateBatchAsync(It.IsAny<SubtitleBatch>(), Lang.German, Lang.English))
                 .ReturnsAsync(batchResponse);
 
             // Act - Call the service method we're testing
@@ -125,7 +125,7 @@ namespace LanguageLearningTools.Application.Tests
 
             // Verify that no translation service calls were made (efficiency check)
             _mockTranslationService.Verify(
-                x => x.TranslateBatchAsync(It.IsAny<SubtitleBatchRequest>(), It.IsAny<Lang>(), It.IsAny<Lang>()),
+                x => x.TranslateBatchAsync(It.IsAny<SubtitleBatch>(), It.IsAny<Lang>(), It.IsAny<Lang>()),
                 Times.Never);
         }
 
@@ -164,7 +164,7 @@ namespace LanguageLearningTools.Application.Tests
 
             // Use SetupSequence to return different responses for each batch translation call
             _mockTranslationService
-                .SetupSequence(x => x.TranslateBatchAsync(It.IsAny<SubtitleBatchRequest>(), Lang.German, Lang.English))
+                .SetupSequence(x => x.TranslateBatchAsync(It.IsAny<SubtitleBatch>(), Lang.German, Lang.English))
                 .ReturnsAsync(new SubtitleBatchResponse { TranslatedLines = translatedLines1.ToList() })
                 .ReturnsAsync(new SubtitleBatchResponse { TranslatedLines = translatedLines2.ToList() });
 
@@ -181,7 +181,7 @@ namespace LanguageLearningTools.Application.Tests
 
             // Verify that translation service was called exactly twice (once per batch)
             _mockTranslationService.Verify(
-                x => x.TranslateBatchAsync(It.IsAny<SubtitleBatchRequest>(), Lang.German, Lang.English),
+                x => x.TranslateBatchAsync(It.IsAny<SubtitleBatch>(), Lang.German, Lang.English),
                 Times.Exactly(2));
         }
     }
