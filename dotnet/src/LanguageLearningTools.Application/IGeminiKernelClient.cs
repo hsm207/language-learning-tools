@@ -15,6 +15,8 @@ namespace LanguageLearningTools.Application
         /// <param name="prompt">The prompt string to send to Gemini.</param>
         /// <param name="executionSettings">The execution settings for the Gemini API call.</param>
         /// <returns>The raw string response from the Gemini API.</returns>
+#pragma warning disable SKEXP0070
         Task<string> InvokeGeminiAsync(string prompt, GeminiPromptExecutionSettings executionSettings);
+#pragma warning restore SKEXP0070
     }
 }
