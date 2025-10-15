@@ -55,11 +55,46 @@ namespace LanguageLearningTools.Infrastructure
             // 2. Format the prompt for Gemini
             var prompt = FormatGeminiPrompt(sourceLanguage, targetLanguage, batch.Context, batch.Lines);
 
-            // 3. Execute Gemini translation with retry and rate limiting
-            var output = await ExecuteGeminiTranslationWithRetryAndRateLimit(prompt);
+            try
+            {
+                // 3. Execute Gemini translation with retry and rate limiting
+                var output = await ExecuteGeminiTranslationWithRetryAndRateLimit(prompt);
 
-            // 4. Process Gemini's response and map to domain models
-            return ProcessGeminiResponse(batch, output);
+                // 4. Process Gemini's response and map to domain models
+                return ProcessGeminiResponse(batch, output);
+            }
+            catch (TranslationLineCountMismatchException ex)
+            {
+                return HandleTranslationMismatchFallback(batch, ex);
+            }
+        }
+
+        private SubtitleBatchResponse HandleTranslationMismatchFallback(SubtitleBatch batch, TranslationLineCountMismatchException ex)
+        {
+            _logger.LogError("Translation failed after all retries due to line count mismatch. Returning batch with blank translations. Details: {0}", ex.Message);
+            
+            var blankTranslatedLines = new List<SubtitleLine>();
+            for (int i = 0; i < batch.Lines.Count; i++)
+            {
+                var originalLine = batch.Lines[i];
+                // Log specific missing lines for better debugging
+                if (i >= ex.ActualCount)
+                {
+                    _logger.LogWarning("Missing translation for line {LineNumber} (Time: {StartTime}-{EndTime}, Text: \"{OriginalText}\"). Using blank text as fallback.",
+                        i + 1, originalLine.Start, originalLine.End, originalLine.Text);
+                }
+                // Blank out all translated text for this failed batch
+                blankTranslatedLines.Add(new SubtitleLine(
+                    originalLine.Start,
+                    originalLine.End,
+                    originalLine.Text,
+                    string.Empty // Blank translated text
+                ));
+            }
+            return new SubtitleBatchResponse
+            {
+                TranslatedLines = blankTranslatedLines
+            };
         }
 
         private void ValidateBatchInput(SubtitleBatch batch)
@@ -97,6 +132,7 @@ namespace LanguageLearningTools.Infrastructure
         {
             return Policy
                 .Handle<HttpRequestException>()
+                .Or<TranslationLineCountMismatchException>() // Explicitly handle this custom exception
                 .Or<InvalidOperationException>()
                 .WaitAndRetryAsync(
                     retryCount: 3,
@@ -114,13 +150,14 @@ namespace LanguageLearningTools.Infrastructure
             if (geminiResponse?.TranslatedLines == null)
             {
                 _logger.LogError("Translation failed: Gemini response contained no translated lines.");
-                throw new InvalidOperationException("Gemini response contained no translated lines.");
+                throw new TranslationLineCountMismatchException(batch.Lines.Count, 0);
             }
 
             if (geminiResponse.TranslatedLines.Count != batch.Lines.Count)
             {
-                _logger.LogWarning("Translation discrepancy: Expected {ExpectedCount} translations, got {ActualCount}. Falling back to original text for missing translations.",
+                _logger.LogWarning("Translation discrepancy: Expected {ExpectedCount} translations, got {ActualCount}. This will trigger a retry.",
                     batch.Lines.Count, geminiResponse.TranslatedLines.Count);
+                throw new TranslationLineCountMismatchException(batch.Lines.Count, geminiResponse.TranslatedLines.Count);
             }
 
             _logger.LogInformation("Translation batch completed successfully with {TranslatedCount} lines",
@@ -130,24 +167,12 @@ namespace LanguageLearningTools.Infrastructure
             for (int i = 0; i < batch.Lines.Count; i++)
             {
                 var originalLine = batch.Lines[i];
-                string translatedText = originalLine.Text; // Default to original text
-
-                if (i < geminiResponse.TranslatedLines.Count)
-                {
-                    var translatedGeminiLine = geminiResponse.TranslatedLines[i];
-                    translatedText = WebUtility.HtmlDecode(translatedGeminiLine.TranslatedText); // Decode HTML entities
-                }
-                else
-                {
-                    _logger.LogWarning("Missing translation for line {LineNumber} (Time: {StartTime}-{EndTime}, Text: \"{OriginalText}\"). Using original text as fallback.",
-                        i + 1, originalLine.Start, originalLine.End, originalLine.Text);
-                }
-
+                var translatedGeminiLine = geminiResponse.TranslatedLines[i];
                 translatedSubtitleLines.Add(new SubtitleLine(
                     originalLine.Start,
                     originalLine.End,
                     originalLine.Text,
-                    translatedText
+                    WebUtility.HtmlDecode(translatedGeminiLine.TranslatedText) // Decode HTML entities
                 ));
             }
 
