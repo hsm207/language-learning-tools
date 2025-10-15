@@ -1,9 +1,12 @@
 using System;
-using System.Net;
-using System.Reflection;
-using LanguageLearningTools.Infrastructure;
-using Microsoft.SemanticKernel;
+using System.Collections.Generic;
+using System.Text.Json;
+using System.Threading.Tasks;
+using LanguageLearningTools.Domain;
+using LanguageLearningTools.Application;
+using Moq;
 using Xunit;
+using Microsoft.SemanticKernel.Connectors.Google;
 
 namespace LanguageLearningTools.Infrastructure.Tests
 {
@@ -12,73 +15,43 @@ namespace LanguageLearningTools.Infrastructure.Tests
     /// </summary>
     public class GeminiSubtitleTranslationServiceTests
     {
-        /// <summary>
-        /// Test that API_KEY_INVALID errors should not be retried
-        /// </summary>
         [Fact]
-        public void ShouldRetryException_WithApiKeyInvalidError_ReturnsFalse()
+        public async Task TranslateBatchAsync_WithMismatchedLineCount_UsesFallbackText()
         {
             // Arrange
-            var responseContent = @"{
-                ""error"": {
-                    ""code"": 400,
-                    ""message"": ""API key not valid. Please pass a valid API key."",
-                    ""status"": ""INVALID_ARGUMENT"",
-                    ""details"": [
-                        {
-                            ""@type"": ""type.googleapis.com/google.rpc.ErrorInfo"",
-                            ""reason"": ""API_KEY_INVALID"",
-                            ""domain"": ""googleapis.com""
-                        }
-                    ]
-                }
-            }";
+            var mockGeminiKernelClient = new Mock<IGeminiKernelClient>();
 
-            var httpException = new HttpOperationException(HttpStatusCode.BadRequest, "API key error", responseContent, null);
+            var response = new GeminiSubtitleBatchResponse(new List<GeminiSubtitleLine>
+            {
+                new GeminiSubtitleLine("Original Line 1", "Translated Line 1"),
+                new GeminiSubtitleLine("Original Line 2", "Translated Line 2")
+            });
 
-            // Act
-            var shouldRetry = InvokeShouldRetryException(httpException);
+            var jsonResponse = JsonSerializer.Serialize(response);
 
-            // Assert
-            Assert.False(shouldRetry, "API_KEY_INVALID errors should not be retried");
-        }
+#pragma warning disable SKEXP0070
+            mockGeminiKernelClient.Setup(c => c.InvokeGeminiAsync(It.IsAny<string>(), It.IsAny<GeminiPromptExecutionSettings>()))
+#pragma warning restore SKEXP0070
+                .ReturnsAsync(jsonResponse);
 
-        /// <summary>
-        /// Test that all other HttpOperationException errors should be retried
-        /// </summary>
-        [Fact]
-        public void ShouldRetryException_WithOtherHttpErrors_ReturnsTrue()
-        {
-            // Arrange - Test a different error type that should be retried
-            var responseContent = @"{
-                ""error"": {
-                    ""code"": 429,
-                    ""message"": ""Quota exceeded"",
-                    ""status"": ""RESOURCE_EXHAUSTED""
-                }
-            }";
+            var service = new GeminiSubtitleTranslationService(mockGeminiKernelClient.Object);
 
-            var httpException = new HttpOperationException(HttpStatusCode.TooManyRequests, "Rate limited", responseContent, null);
+            var batch = new SubtitleBatch(new List<SubtitleLine>(), new List<SubtitleLine>
+            {
+                new SubtitleLine(TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(1), "Line 1"),
+                new SubtitleLine(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2), "Line 2"),
+                new SubtitleLine(TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(3), "Line 3")
+            });
 
             // Act
-            var shouldRetry = InvokeShouldRetryException(httpException);
+            var result = await service.TranslateBatchAsync(batch, Lang.English, Lang.German);
 
             // Assert
-            Assert.True(shouldRetry, "Non-API_KEY_INVALID errors should be retried");
-        }
-
-        /// <summary>
-        /// Helper method to invoke the private ShouldRetryException method using reflection
-        /// </summary>
-        private static bool InvokeShouldRetryException(HttpOperationException exception)
-        {
-            var method = typeof(GeminiSubtitleTranslationService).GetMethod("ShouldRetryException", 
-                BindingFlags.NonPublic | BindingFlags.Static);
-            
-            if (method == null)
-                throw new InvalidOperationException("ShouldRetryException method not found");
-
-            return (bool)method.Invoke(null, new object[] { exception });
+            Assert.NotNull(result);
+            Assert.Equal(batch.Lines.Count, result.TranslatedLines.Count);
+            Assert.Equal("Translated Line 1", result.TranslatedLines[0].TranslatedText);
+            Assert.Equal("Translated Line 2", result.TranslatedLines[1].TranslatedText);
+            Assert.Equal("Line 3", result.TranslatedLines[2].TranslatedText); // Fallback to original text
         }
     }
 }

@@ -16,7 +16,6 @@ namespace LanguageLearningTools.Infrastructure
     /// </list>
     /// <para><strong>Key Transformations:</strong></para>
     /// <list type="bullet">
-    /// <item><description>TimeSpan ↔ String timestamp conversion ("hh:mm:ss.fff" format)</description></item>
     /// <item><description>HTML entity decoding for proper Unicode character display (emojis, special chars)</description></item>
     /// <item><description>Null safety and validation</description></item>
     /// </list>
@@ -27,14 +26,12 @@ namespace LanguageLearningTools.Infrastructure
         /// Converts a domain subtitle line to Gemini API format for outbound requests.
         /// </summary>
         /// <param name="line">The domain subtitle line to convert</param>
-        /// <returns>A Gemini-compatible representation with string timestamps</returns>
+        /// <returns>A Gemini-compatible representation with only text</returns>
         /// <exception cref="ArgumentNullException">Thrown when line is null</exception>
         public static GeminiSubtitleLine ToGeminiDto(SubtitleLine line)
         {
             if (line == null) throw new ArgumentNullException(nameof(line));
             return new GeminiSubtitleLine(
-                line.Start.ToString(@"hh\:mm\:ss\.fff"),
-                line.End.ToString(@"hh\:mm\:ss\.fff"),
                 line.Text,
                 line.TranslatedText
             );
@@ -58,9 +55,11 @@ namespace LanguageLearningTools.Infrastructure
             // Decode HTML entities in the translated text to preserve Unicode characters (emojis, etc.)
             var decodedTranslatedText = WebUtility.HtmlDecode(dto.TranslatedText);
             
+            // Timestamps are not part of the Gemini DTO anymore, they are preserved from the original SubtitleLine
+            // This method will be called with the original SubtitleLine's timestamps.
             return new SubtitleLine(
-                TimeSpan.ParseExact(dto.Start, @"hh\:mm\:ss\.fff", null),
-                TimeSpan.ParseExact(dto.End, @"hh\:mm\:ss\.fff", null),
+                TimeSpan.Zero, // Placeholder, actual timestamps will come from the original SubtitleLine
+                TimeSpan.Zero, // Placeholder
                 dto.Text,
                 decodedTranslatedText
             );

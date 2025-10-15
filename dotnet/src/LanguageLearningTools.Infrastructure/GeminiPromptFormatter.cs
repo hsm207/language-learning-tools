@@ -39,22 +39,20 @@ CRITICAL REQUIREMENTS:
         /// <param name="sourceLanguage">The source language.</param>
         /// <param name="targetLanguage">The target language.</param>
         /// <returns>A dictionary of variables for the prompt.</returns>
-        public Dictionary<string, object> FormatVariables(GeminiSubtitleBatchRequest request, Lang sourceLanguage, Lang targetLanguage)
+        public string FormatPrompt(Lang sourceLanguage, Lang targetLanguage, IReadOnlyList<SubtitleLine> contextLines, IReadOnlyList<SubtitleLine> linesToTranslate)
         {
-            var contextLinesFormatted = request.ContextLines.Count > 0
-                ? "CONTEXT LINES (for reference):\n" + string.Join("\n", request.ContextLines.Select(line => $"[{line.Start} → {line.End}] {line.Text}"))
+            var contextLinesFormatted = contextLines.Count > 0
+                ? "CONTEXT LINES (for reference):\n" + string.Join("\n", contextLines.Select(line => $"[{line.Start:hh\\:mm\\:ss\\.fff} → {line.End:hh\\:mm\\:ss\\.fff}] {line.Text}"))
                 : string.Empty;
 
             var linesToTranslateFormatted = "LINES TO TRANSLATE:\n" +
-                string.Join("\n", request.LinesToTranslate.Select(line => $"[{line.Start} → {line.End}] {line.Text}"));
+                string.Join("\n", linesToTranslate.Select(line => line.Text));
 
-            return new Dictionary<string, object>
-            {
-                ["sourceLanguage"] = sourceLanguage.ToString(),
-                ["targetLanguage"] = targetLanguage.ToString(),
-                ["contextLinesFormatted"] = contextLinesFormatted,
-                ["linesToTranslateFormatted"] = linesToTranslateFormatted
-            };
+            return PromptTemplate
+                .Replace("{{$sourceLanguage}}", sourceLanguage.ToString())
+                .Replace("{{$targetLanguage}}", targetLanguage.ToString())
+                .Replace("{{$contextLinesFormatted}}", contextLinesFormatted)
+                .Replace("{{$linesToTranslateFormatted}}", linesToTranslateFormatted);
         }
     }
 }

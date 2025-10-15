@@ -65,3 +65,5 @@ artifacts/
 
 # MacOS specific files
 .DS_Store
+*.json
+*.ttml2

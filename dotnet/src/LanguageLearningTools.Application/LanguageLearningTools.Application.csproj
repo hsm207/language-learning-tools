@@ -1,12 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="../LanguageLearningTools.Domain/LanguageLearningTools.Domain.csproj" />
+    <ProjectReference Include="../../submodules/semantic-kernel/dotnet/src/SemanticKernel.Abstractions/SemanticKernel.Abstractions.csproj" />
+    <ProjectReference Include="../../submodules/semantic-kernel/dotnet/src/Connectors/Connectors.Google/Connectors.Google.csproj" />
   </ItemGroup>
 
 </Project>
