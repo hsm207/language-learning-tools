@@ -15,8 +15,6 @@ namespace LanguageLearningTools.Infrastructure.Tests
         {
             var line = new SubtitleLine(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2), "Hello! 😊", "Hallo! 😊");
             var dto = GeminiSubtitleLineMapper.ToGeminiDto(line);
-            Assert.Equal("00:00:01.000", dto.Start);
-            Assert.Equal("00:00:02.000", dto.End);
             Assert.Equal("Hello! 😊", dto.Text);
             Assert.Equal("Hallo! 😊", dto.TranslatedText);
         }
@@ -24,10 +22,10 @@ namespace LanguageLearningTools.Infrastructure.Tests
         [Fact]
         public void FromGeminiDto_MapsCorrectly()
         {
-            var dto = new GeminiSubtitleLine("00:00:03.000", "00:00:04.000", "How are you?", "Wie geht's?");
+            var dto = new GeminiSubtitleLine("How are you?", "Wie geht's?");
             var line = GeminiSubtitleLineMapper.FromGeminiDto(dto);
-            Assert.Equal(TimeSpan.FromSeconds(3), line.Start);
-            Assert.Equal(TimeSpan.FromSeconds(4), line.End);
+            Assert.Equal(TimeSpan.Zero, line.Start);
+            Assert.Equal(TimeSpan.Zero, line.End);
             Assert.Equal("How are you?", line.Text);
             Assert.Equal("Wie geht's?", line.TranslatedText);
         }
@@ -38,8 +36,8 @@ namespace LanguageLearningTools.Infrastructure.Tests
             var original = new SubtitleLine(TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(6), "Bye!", "Tschüss!");
             var dto = GeminiSubtitleLineMapper.ToGeminiDto(original);
             var roundTripped = GeminiSubtitleLineMapper.FromGeminiDto(dto);
-            Assert.Equal(original.Start, roundTripped.Start);
-            Assert.Equal(original.End, roundTripped.End);
+            Assert.Equal(TimeSpan.Zero, roundTripped.Start);
+            Assert.Equal(TimeSpan.Zero, roundTripped.End);
             Assert.Equal(original.Text, roundTripped.Text);
             Assert.Equal(original.TranslatedText, roundTripped.TranslatedText);
         }
@@ -61,8 +59,6 @@ namespace LanguageLearningTools.Infrastructure.Tests
         {
             // HTML entities that Gemini sometimes returns instead of Unicode characters
             var dto = new GeminiSubtitleLine(
-                "00:00:01.000", 
-                "00:00:02.000", 
                 "Hello world", 
                 "&#129412; Regenb&ouml;gen sind nur Einhornschnupfen! &#127752; Caf&eacute; &amp; Spa&szlig;!");
             

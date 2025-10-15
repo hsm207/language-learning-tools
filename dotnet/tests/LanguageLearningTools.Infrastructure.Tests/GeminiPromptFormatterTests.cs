@@ -11,75 +11,72 @@ namespace LanguageLearningTools.Infrastructure.Tests
     public class GeminiPromptFormatterTests
     {
         [Fact]
-        public void FormatVariables_WithContextLines_FormatsCorrectly()
+        public void CreatePromptArguments_WithContextLines_FormatsCorrectly()
         {
             // Arrange
-            var request = new GeminiSubtitleBatchRequest(
-                new List<GeminiSubtitleLine>
-                {
-                    new GeminiSubtitleLine("00:00:01.000", "00:00:02.000", "Hello! 😊", null)
-                },
-                new List<GeminiSubtitleLine>
-                {
-                    new GeminiSubtitleLine("00:00:03.000", "00:00:04.000", "How are you?", null)
-                }
-            );
+            var contextLines = new List<SubtitleLine>
+            {
+                new SubtitleLine(System.TimeSpan.FromSeconds(1), System.TimeSpan.FromSeconds(2), "Hello! 😊")
+            };
+            var linesToTranslate = new List<SubtitleLine>
+            {
+                new SubtitleLine(System.TimeSpan.FromSeconds(3), System.TimeSpan.FromSeconds(4), "How are you?")
+            };
             var formatter = new GeminiPromptFormatter();
 
             // Act
-            var variables = formatter.FormatVariables(request, Lang.English, Lang.German);
+            var prompt = formatter.FormatPrompt(Lang.English, Lang.German, contextLines, linesToTranslate);
 
             // Assert
-            Assert.Equal("English", variables["sourceLanguage"]);
-            Assert.Equal("German", variables["targetLanguage"]);
-            Assert.Contains("CONTEXT LINES (for reference):", variables["contextLinesFormatted"].ToString());
-            Assert.Contains("[00:00:01.000 → 00:00:02.000] Hello! 😊", variables["contextLinesFormatted"].ToString());
-            Assert.Contains("LINES TO TRANSLATE:", variables["linesToTranslateFormatted"].ToString());
-            Assert.Contains("[00:00:03.000 → 00:00:04.000] How are you?", variables["linesToTranslateFormatted"].ToString());
+            Assert.Contains("Translate the following subtitles from English to German.", prompt);
+            Assert.Contains("CONTEXT LINES (for reference):", prompt);
+            Assert.Contains("[00:00:01.000 → 00:00:02.000] Hello! 😊", prompt);
+            Assert.Contains("LINES TO TRANSLATE:", prompt);
+            Assert.Contains("How are you?", prompt);
+            Assert.DoesNotContain("[00:00:03.000 → 00:00:04.000]", prompt);
         }
 
         [Fact]
-        public void FormatVariables_WithoutContextLines_FormatsCorrectly()
+        public void CreatePromptArguments_WithoutContextLines_FormatsCorrectly()
         {
             // Arrange
-            var request = new GeminiSubtitleBatchRequest(
-                new List<GeminiSubtitleLine>(),
-                new List<GeminiSubtitleLine>
-                {
-                    new GeminiSubtitleLine("00:00:05.000", "00:00:06.000", "Goodbye!", null)
-                }
-            );
+            var contextLines = new List<SubtitleLine>();
+            var linesToTranslate = new List<SubtitleLine>
+            {
+                new SubtitleLine(System.TimeSpan.FromSeconds(5), System.TimeSpan.FromSeconds(6), "Goodbye!")
+            };
             var formatter = new GeminiPromptFormatter();
 
             // Act
-            var variables = formatter.FormatVariables(request, Lang.English, Lang.German);
+            var prompt = formatter.FormatPrompt(Lang.English, Lang.German, contextLines, linesToTranslate);
 
             // Assert
-            Assert.Equal("English", variables["sourceLanguage"]);
-            Assert.Equal("German", variables["targetLanguage"]);
-            Assert.Equal(string.Empty, variables["contextLinesFormatted"]);
-            Assert.Contains("LINES TO TRANSLATE:", variables["linesToTranslateFormatted"].ToString());
-            Assert.Contains("[00:00:05.000 → 00:00:06.000] Goodbye!", variables["linesToTranslateFormatted"].ToString());
+            Assert.Contains("Translate the following subtitles from English to German.", prompt);
+            Assert.DoesNotContain("CONTEXT LINES (for reference):", prompt);
+            Assert.Contains("LINES TO TRANSLATE:", prompt);
+            Assert.Contains("Goodbye!", prompt);
+            Assert.DoesNotContain("[00:00:05.000 → 00:00:06.000]", prompt);
         }
 
         [Fact]
-        public void FormatVariables_WithSpecialCharacters_PreservesCharacters()
+        public void CreatePromptArguments_WithSpecialCharacters_PreservesCharacters()
         {
             // Arrange
-            var request = new GeminiSubtitleBatchRequest(
-                new List<GeminiSubtitleLine>(),
-                new List<GeminiSubtitleLine>
-                {
-                    new GeminiSubtitleLine("00:00:07.000", "00:00:08.000", "¡Hola! ¿Qué tal? 🦄", null)
-                }
-            );
+            var contextLines = new List<SubtitleLine>();
+            var linesToTranslate = new List<SubtitleLine>
+            {
+                new SubtitleLine(System.TimeSpan.FromSeconds(7), System.TimeSpan.FromSeconds(8), "¡Hola! ¿Qué tal? 🦄")
+            };
             var formatter = new GeminiPromptFormatter();
 
             // Act
-            var variables = formatter.FormatVariables(request, Lang.German, Lang.English);
+            var prompt = formatter.FormatPrompt(Lang.German, Lang.English, contextLines, linesToTranslate);
 
             // Assert
-            Assert.Contains("¡Hola! ¿Qué tal? 🦄", variables["linesToTranslateFormatted"].ToString());
+            Assert.Contains("Translate the following subtitles from German to English.", prompt);
+            Assert.Contains("LINES TO TRANSLATE:", prompt);
+            Assert.Contains("¡Hola! ¿Qué tal? 🦄", prompt);
+            Assert.DoesNotContain("[00:00:07.000 → 00:00:08.000]", prompt);
         }
     }
 }

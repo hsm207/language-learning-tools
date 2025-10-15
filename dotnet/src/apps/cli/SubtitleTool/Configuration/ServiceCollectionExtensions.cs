@@ -36,7 +36,7 @@ namespace SubtitleTool.Configuration
             // Register Semantic Kernel with Gemini
             var kernelBuilder = Kernel.CreateBuilder();
 #pragma warning disable SKEXP0070
-            kernelBuilder.AddGoogleAIGeminiChatCompletion("gemini-2.5-flash", resolvedApiKey, GoogleAIVersion.V1_Beta);
+            kernelBuilder.AddGoogleAIGeminiChatCompletion("gemini-flash-lite-latest", resolvedApiKey, GoogleAIVersion.V1_Beta);
 #pragma warning restore SKEXP0070
             var kernel = kernelBuilder.Build();
             services.AddSingleton(kernel); // Register Kernel as a singleton
