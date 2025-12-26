@@ -22,11 +22,12 @@ def test_pipeline_execution_flow(mocker):
         logger=mocker.Mock(spec=ILogger)
     )
     
-    # 2. Execute
+    # Act
     job = pipeline.execute("source.m4a", "de")
     
-    # 3. Assert
+    # Assert
     assert job.status == JobStatus.COMPLETED
+    assert job.result is not None
     mock_audio_processor.normalize.assert_called_once_with("source.m4a")
     mock_transcriber.transcribe.assert_called_once()
     mock_diarizer.diarize.assert_called_once()

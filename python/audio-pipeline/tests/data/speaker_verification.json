@@ -1,0 +1,47 @@
+[
+    {
+        "text": "Hallo und herzlich willkommen. Ich bin dein Gastgeber f\u00fcr eine kleine Reise durch die deutsche Grammatik.",
+        "pyannote_assigned": "SPEAKER_00",
+        "label": "SPEAKER_00"
+    },
+    {
+        "text": "Und hier bei mir ist...",
+        "pyannote_assigned": "SPEAKER_00",
+        "label": "SPEAKER_00"
+    },
+    {
+        "text": "Hilfe! Gro\u00dfe, gro\u00dfe Hilfe!",
+        "pyannote_assigned": "SPEAKER_01",
+        "label": "SPEAKER_01"
+    },
+    {
+        "text": "Oh?",
+        "pyannote_assigned": "SPEAKER_01",
+        "label": "SPEAKER_00"
+    },
+    {
+        "text": "Ich habe ein Riesenproblem. Meine Karriere als romantischer Dichter ist vorbei.",
+        "pyannote_assigned": "SPEAKER_00",
+        "label": "SPEAKER_01"
+    },
+    {
+        "text": "Bevor sie \u00fcberhaupt angefangen hat.",
+        "pyannote_assigned": "SPEAKER_01",
+        "label": "SPEAKER_01"
+    },
+    {
+        "text": "Oh, Moment mal. Das klingt aber dramatisch. Was ist denn passiert?",
+        "pyannote_assigned": "SPEAKER_01",
+        "label": "SPEAKER_00"
+    },
+    {
+        "text": "Ich habe einer sehr, sehr netten Person eine Nachricht geschrieben. Eine poetische Nachricht.",
+        "pyannote_assigned": "SPEAKER_00",
+        "label": "SPEAKER_01"
+    },
+    {
+        "text": "Aber meine Grammatik...",
+        "pyannote_assigned": "SPEAKER_01",
+        "label": "SPEAKER_01"
+    }
+]
