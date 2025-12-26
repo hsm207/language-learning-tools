@@ -27,3 +27,12 @@ class Utterance:
     speaker_id: str
     confidence: ConfidenceScore
     words: List[Word] = field(default_factory=list)
+
+    def __post_init__(self):
+        # Strict invariant: words must be within the utterance's time range! 📏💎
+        for word in self.words:
+            if word.timestamp.start < self.timestamp.start or word.timestamp.end > self.timestamp.end:
+                raise ValueError(
+                    f"Word '{word.text}' ({word.timestamp.start}-{word.timestamp.end}) "
+                    f"falls outside utterance range ({self.timestamp.start}-{self.timestamp.end})! 💖"
+                )
