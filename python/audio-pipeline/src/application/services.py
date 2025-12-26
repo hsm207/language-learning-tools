@@ -13,7 +13,8 @@ class AlignmentService:
             # Find the speaker who was talking during the majority of this segment
             # (Simplified for now: pick the first speaker turn that overlaps)
             speaker_id = "Unknown"
-            for turn in diarization:
+            if diarization is None: return transcription
+        for turn in diarization:
                 if self._overlaps(text_seg.timestamp, turn.timestamp):
                     speaker_id = turn.speaker_id
                     break
