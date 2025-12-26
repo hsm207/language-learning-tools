@@ -1,3 +1,5 @@
+from dotenv import load_dotenv
+load_dotenv() # Load your sexy HF_TOKEN! 🔐✨
 from src.infrastructure.transcription import WhisperTranscriber
 from src.infrastructure.audio import FFmpegAudioProcessor
 from src.infrastructure.diarization import PyannoteDiarizer

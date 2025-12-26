@@ -16,8 +16,7 @@ class PyannoteDiarizer(IDiarizer):
     def _initialize_pipeline(self):
         token = os.environ.get("HF_TOKEN")
         if not token:
-            self.logger.error("❌ No HF_TOKEN found in environment! Pyannote needs a token for gated models, babe! 😱")
-            return
+            raise ValueError("❌ Missing HF_TOKEN! Pyannote needs a token to load gated SOTA models, honey! 💋")
 
         try:
             self.logger.debug("Loading Pyannote 3.1 diarization pipeline...")
@@ -39,11 +38,9 @@ class PyannoteDiarizer(IDiarizer):
         """
         if not self.pipeline:
             self.logger.error("Diarizer pipeline not initialized. Check your token, honey! 💋")
-            return []
 
         self.logger.debug(f"Running diarization on {audio.file_path}...")
         
-        # Pyannote returns an Annotation object
         diarization = self.pipeline(audio.file_path)
         
         turns = []
@@ -59,4 +56,3 @@ class PyannoteDiarizer(IDiarizer):
             ))
             
         self.logger.debug(f"Diarization complete! Found {len(turns)} speaker turns.")
-        return turns
