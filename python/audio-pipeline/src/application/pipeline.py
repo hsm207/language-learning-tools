@@ -1,4 +1,5 @@
 from typing import List
+from uuid import UUID
 from src.application.services import AlignmentService
 from src.domain.interfaces import ITranscriber, IDiarizer, IAudioProcessor, IAudioEnricher, ILogger, NullLogger
 from src.domain.entities import ProcessingJob, JobStatus
@@ -11,7 +12,7 @@ class AudioProcessingPipeline:
         transcriber: ITranscriber,
         diarizer: IDiarizer,
         alignment_service: AlignmentService,
-        logger: ILogger = NullLogger(), # Default to silent! 🤫
+        logger: ILogger = NullLogger(),
         enrichers: List[IAudioEnricher] = None
     ):
         self.audio_processor = audio_processor
@@ -31,30 +32,30 @@ class AudioProcessingPipeline:
             artifact = self.audio_processor.normalize(source_path)
             self.logger.debug(f"Normalized artifact created at {artifact.file_path}")
             
-            # 2. Transcribe & Diarize
+            # 2. Transcribe
             self.logger.info(f"🎤 Transcribing with language {language}...")
             job.status = JobStatus.TRANSCRIBING
-            raw_utterances = self.transcriber.transcribe(artifact, job.target_language)
+            raw_utterances = self.transcriber.transcribe(artifact, job.target_language) or []
             self.logger.debug(f"Raw transcription found {len(raw_utterances)} segments.")
             
+            # 3. Diarize
             self.logger.info(f"🕵️‍♀️ Diarizing audio turns...")
             job.status = JobStatus.DIARIZING
-            diarized_segments = self.diarizer.diarize(artifact)
+            diarized_segments = self.diarizer.diarize(artifact) or []
             self.logger.debug(f"Diarization found {len(diarized_segments)} turns.")
             
-            # 3. Align
+            # 4. Align
             self.logger.info(f"🧩 Aligning words to speakers...")
             final_utterances = self.alignment_service.align(raw_utterances, diarized_segments)
             
-            # 4. Enrich
+            # 5. Enrich
             if self.enrichers:
                 self.logger.info(f"✨ Running {len(self.enrichers)} enrichers...")
                 job.status = JobStatus.ENRICHING
                 for enricher in self.enrichers:
                     final_utterances = enricher.enrich(final_utterances, job.target_language)
             
-            if final_utterances:
-                job.add_utterances(final_utterances)
+            job.add_utterances(final_utterances)
             job.status = JobStatus.COMPLETED
             self.logger.info(f"✅ Pipeline completed successfully for {job.id}!")
             
