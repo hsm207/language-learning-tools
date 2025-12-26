@@ -23,7 +23,7 @@ class WhisperTranscriber(ITranscriber):
             "-m", self.model_path,
             "-f", audio.file_path,
             "-l", str(language),
-            "-oj", # Output JSON for detailed metadata
+            "-ojf", # Output FULL JSON for token/word metadata 💎✨
             "-of", output_base,
             "-t", "8" # Using 8 threads for speed! 💨
         ]
@@ -59,22 +59,13 @@ class WhisperTranscriber(ITranscriber):
             words = []
             for token in segment.get("tokens", []):
                 t_text = token.get("text", "").strip()
-                if not t_text:
+                if not t_text or t_text.startswith("[_") or t_text.endswith("_]"):
                     continue
                 
-                # Some tokens are special characters or [BEAT], we might want to filter or handle them
-                # For now, let's treat each token as a "word" for simplicity
-                t_start = token.get("t0", 0) * 10 # whisper.cpp t0/t1 are often in 1/100s of sec? 
-                t_end = token.get("t1", 0) * 10   # Actually, it depends on the version. 
-                # Let's assume they are in milliseconds if it's whisper-cli -oj.
-                # Actually, in whisper.cpp's JSON, t0 and t1 are usually in milliseconds if they match segment offsets.
-                
-                # Wait, let's look at the segment offsets: start_ms is offsets.get("from")
-                # If t0 is 0 and start_ms is 500, then the absolute time is start_ms + t0? 
-                # No, usually t0/t1 in tokens are absolute from start of audio.
-                
-                t_start = token.get("t0", start_ms)
-                t_end = token.get("t1", end_ms)
+                # Use offsets for precise milliseconds! 🎯
+                t_offsets = token.get("offsets", {})
+                t_start = t_offsets.get("from", start_ms)
+                t_end = t_offsets.get("to", end_ms)
                 t_conf = token.get("p", 1.0)
                 
                 words.append(Word(
