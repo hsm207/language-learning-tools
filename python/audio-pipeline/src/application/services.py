@@ -5,7 +5,7 @@ from src.domain.value_objects import Utterance
 class MaxOverlapAlignmentService(IAlignmentService):
     def align(self, transcription: List[Utterance], diarization: List[Utterance]) -> List[Utterance]:
         """
-        Aligns raw transcription text with diarized speaker turns using weighted max overlap. ⚖️🎯
+        Aligns raw transcription text with diarized speaker turns using weighted max overlap.
         """
         if not diarization:
             return transcription
@@ -32,7 +32,7 @@ class MaxOverlapAlignmentService(IAlignmentService):
         return aligned_utterances
 
     def _get_overlap_duration(self, range1, range2) -> float:
-        """Calculates the duration of overlap between two timestamp ranges in seconds. 📏✨"""
+        """Calculates the duration of overlap between two timestamp ranges in seconds."""
         start = max(range1.start, range2.start)
         end = min(range1.end, range2.end)
         return max(0.0, (end - start).total_seconds())
