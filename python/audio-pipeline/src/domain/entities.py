@@ -33,5 +33,5 @@ class ProcessingJob:
         self.status = JobStatus.INGESTED
 
     def add_utterances(self, utterances: List[Utterance]):
-        self.utterances.extend(utterances)
+        if utterances: self.utterances.extend(utterances)
         self.utterances.sort(key=lambda x: x.timestamp.start)
