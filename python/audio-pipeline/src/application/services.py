@@ -21,7 +21,8 @@ class AlignmentService:
                 timestamp=text_seg.timestamp,
                 text=text_seg.text,
                 speaker_id=speaker_id,
-                confidence=text_seg.confidence
+                confidence=text_seg.confidence,
+                words=text_seg.words
             ))
             
         return aligned_utterances
