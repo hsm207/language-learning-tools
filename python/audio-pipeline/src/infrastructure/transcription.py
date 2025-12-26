@@ -37,14 +37,22 @@ class WhisperTranscriber(ITranscriber):
         json_path = f"{output_base}.json"
         self.logger.debug(f"Parsing Whisper output from {json_path}")
             
+        if not os.path.exists(json_path):
+            self.logger.error(f"❌ Whisper JSON output not found at {json_path}!")
+            return []
+
         with open(json_path, "r", encoding="utf-8") as f:
             data = json.load(f)
             
+        if not data or "transcription" not in data:
+            self.logger.debug("Whisper returned empty or malformed JSON data.")
+            return []
+
         utterances = []
-        # whisper.cpp JSON structure uses 'transcription' key
         for segment in data.get("transcription", []):
-            start_ms = segment.get("offsets", {}).get("from", 0)
-            end_ms = segment.get("offsets", {}).get("to", 0)
+            offsets = segment.get("offsets", {})
+            start_ms = offsets.get("from", 0)
+            end_ms = offsets.get("to", 0)
             text = segment.get("text", "").strip()
             
             utterances.append(Utterance(
@@ -53,8 +61,9 @@ class WhisperTranscriber(ITranscriber):
                     end=timedelta(milliseconds=end_ms)
                 ),
                 text=text,
-                speaker_id="Unknown", # To be filled by Diarizer/Alignment
-                confidence=ConfidenceScore(1.0) # Placeholder
+                speaker_id="Unknown",
+                confidence=ConfidenceScore(1.0)
             ))
             
+        self.logger.debug(f"Raw transcription found {len(utterances)} segments.")
         return utterances
