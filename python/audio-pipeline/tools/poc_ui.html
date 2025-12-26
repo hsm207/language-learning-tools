@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Pipeline Explorer 🎶✨</title>
+    <style>
+        :root {
+            --primary: #ff6b6b;
+            --secondary: #4ecdc4;
+            --bg: #f7f9fc;
+            --text: #2d3436;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+
+        .setup-section {
+            background: #f1f2f6;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            justify-content: center;
+            align-items: flex-end;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .input-group label {
+            font-weight: bold;
+            font-size: 0.9rem;
+            color: #636e72;
+        }
+
+        input[type="file"] {
+            font-size: 0.8rem;
+        }
+
+        audio {
+            width: 100%;
+            margin-bottom: 2rem;
+        }
+
+        .transcript-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+            transition: background 0.3s;
+        }
+
+        .transcript-row:hover {
+            background-color: #f0f7f6;
+        }
+
+        .row-controls {
+            display: flex;
+            gap: 0.5rem;
+            min-width: 140px;
+        }
+
+        .control-btn {
+            background: #dfe6e9;
+            border: none;
+            padding: 0.4rem 0.8rem;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: bold;
+            transition: all 0.2s;
+            color: var(--text);
+        }
+
+        .control-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .control-btn:hover {
+            filter: brightness(0.9);
+        }
+
+        .speaker-label {
+            font-weight: bold;
+            color: var(--secondary);
+            min-width: 100px;
+            font-size: 0.85rem;
+        }
+
+        .content {
+            flex-grow: 1;
+            line-height: 1.6;
+        }
+
+        .word {
+            display: inline-block;
+            margin-right: 0.2rem;
+            padding: 0 0.1rem;
+            border-radius: 3px;
+            transition: all 0.05s;
+        }
+
+        .word.active {
+            background-color: var(--primary);
+            color: white;
+            transform: scale(1.15);
+            box-shadow: 0 2px 5px rgba(255, 107, 107, 0.4);
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #b2bec3;
+            padding: 3rem;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Audio Pipeline Explorer 🎤✨</h1>
+        
+        <div class="setup-section">
+            <div class="input-group">
+                <label>1. Upload Pipeline Metadata (JSON) 📄</label>
+                <input type="file" id="jsonInput" accept=".json">
+            </div>
+            <div class="input-group">
+                <label>2. Upload Source Audio 🔊</label>
+                <input type="file" id="audioInput" accept="audio/*">
+            </div>
+        </div>
+
+        <audio id="audioPlayer" controls></audio>
+        
+        <div id="transcript">
+            <div class="empty-state">Upload your files to start the magic! ✨</div>
+        </div>
+    </div>
+
+    <script>
+        const jsonInput = document.getElementById('jsonInput');
+        const audioInput = document.getElementById('audioInput');
+        const audioPlayer = document.getElementById('audioPlayer');
+        const transcriptEl = document.getElementById('transcript');
+
+        let transcriptData = null;
+        let activeRowIdx = -1;
+        let isLooping = false;
+
+        // 1. Handle JSON Upload
+        jsonInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    transcriptData = JSON.parse(event.target.result);
+                    renderTranscript();
+                } catch (err) {
+                    alert("❌ Invalid JSON file! 💖");
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        // 2. Handle Audio Upload
+        audioInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            audioPlayer.src = URL.createObjectURL(file);
+        });
+
+        // 3. Render the UI
+        function renderTranscript() {
+            if (!transcriptData || !transcriptData.utterances) return;
+            
+            transcriptEl.innerHTML = '';
+            
+            transcriptData.utterances.forEach((u, uIdx) => {
+                const row = document.createElement('div');
+                row.className = 'transcript-row';
+                row.id = `row-${uIdx}`;
+
+                const controls = document.createElement('div');
+                controls.className = 'row-controls';
+                
+                const playBtn = document.createElement('button');
+                playBtn.className = 'control-btn';
+                playBtn.id = `play-${uIdx}`;
+                playBtn.innerText = '▶ Play';
+                playBtn.onclick = () => toggleRowPlayback(uIdx);
+
+                const loopBtn = document.createElement('button');
+                loopBtn.className = 'control-btn';
+                loopBtn.id = `loop-${uIdx}`;
+                loopBtn.innerText = '🔄 Loop';
+                loopBtn.onclick = () => toggleRowLoop(uIdx);
+
+                controls.appendChild(playBtn);
+                controls.appendChild(loopBtn);
+
+                const speaker = document.createElement('div');
+                speaker.className = 'speaker-label';
+                speaker.innerText = u.speaker_id;
+
+                const content = document.createElement('div');
+                content.className = 'content';
+                
+                u.words.forEach((w, wIdx) => {
+                    const wordSpan = document.createElement('span');
+                    wordSpan.className = 'word';
+                    wordSpan.id = `w-${uIdx}-${wIdx}`;
+                    wordSpan.innerText = w.text;
+                    wordSpan.dataset.start = w.start;
+                    wordSpan.dataset.end = w.end;
+                    content.appendChild(wordSpan);
+                    content.appendChild(document.createTextNode(' '));
+                });
+
+                row.appendChild(controls);
+                row.appendChild(speaker);
+                row.appendChild(content);
+                transcriptEl.appendChild(row);
+            });
+        }
+
+        function toggleRowPlayback(idx) {
+            const u = transcriptData.utterances[idx];
+            
+            if (activeRowIdx === idx && !audioPlayer.paused) {
+                audioPlayer.pause();
+                updateButtonStates();
+            } else {
+                activeRowIdx = idx;
+                isLooping = false; // Playing usually resets loop unless we click loop
+                audioPlayer.currentTime = u.start;
+                audioPlayer.play();
+                updateButtonStates();
+            }
+        }
+
+        function toggleRowLoop(idx) {
+            if (activeRowIdx === idx && isLooping) {
+                isLooping = false;
+            } else {
+                activeRowIdx = idx;
+                isLooping = true;
+                const u = transcriptData.utterances[idx];
+                audioPlayer.currentTime = u.start;
+                audioPlayer.play();
+            }
+            updateButtonStates();
+        }
+
+        function updateButtonStates() {
+            document.querySelectorAll('.control-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.control-btn').forEach(btn => {
+                if (btn.id.startsWith('play-')) btn.innerText = '▶ Play';
+            });
+
+            if (activeRowIdx !== -1) {
+                const playBtn = document.getElementById(`play-${activeRowIdx}`);
+                const loopBtn = document.getElementById(`loop-${activeRowIdx}`);
+                
+                if (!audioPlayer.paused) {
+                    playBtn.innerText = '⏸ Pause';
+                    playBtn.classList.add('active');
+                }
+                if (isLooping) {
+                    loopBtn.classList.add('active');
+                }
+            }
+        }
+
+        // 4. Real-time Logic Loop 🔄
+        function update() {
+            if (!audioPlayer.paused && transcriptData) {
+                const now = audioPlayer.currentTime;
+                
+                // Row bounding logic
+                if (activeRowIdx !== -1) {
+                    const u = transcriptData.utterances[activeRowIdx];
+                    if (now >= u.end) {
+                        if (isLooping) {
+                            audioPlayer.currentTime = u.start;
+                        } else {
+                            audioPlayer.pause();
+                            updateButtonStates();
+                        }
+                    }
+                }
+
+                // Highlighting
+                document.querySelectorAll('.word').forEach(el => {
+                    const start = parseFloat(el.dataset.start);
+                    const end = parseFloat(el.dataset.end);
+                    if (now >= start && now <= end) {
+                        el.classList.add('active');
+                    } else {
+                        el.classList.remove('active');
+                    }
+                });
+            }
+            requestAnimationFrame(update);
+        }
+
+        audioPlayer.onpause = updateButtonStates;
+        audioPlayer.onplay = updateButtonStates;
+
+        requestAnimationFrame(update);
+    </script>
+</body>
+</html>
