@@ -23,9 +23,9 @@ class WhisperTranscriber(ITranscriber):
             "-m", self.model_path,
             "-f", audio.file_path,
             "-l", str(language),
-            "-ojf", # Output FULL JSON for token/word metadata 💎✨
+            "-ojf",
             "-of", output_base,
-            "-t", "8" # Using 8 threads for speed! 💨
+            "-t", "8"
         ]
         
         self.logger.debug(f"Running Whisper command: {' '.join(command)}")
@@ -55,14 +55,12 @@ class WhisperTranscriber(ITranscriber):
             end_ms = offsets.get("to", 0)
             text = segment.get("text", "").strip()
             
-            # Extract word-level data if available (tokens) 🕵️‍♀️
             words = []
             for token in segment.get("tokens", []):
                 t_text = token.get("text", "").strip()
                 if not t_text or t_text.startswith("[_") or t_text.endswith("_]"):
                     continue
                 
-                # Use offsets for precise milliseconds! 🎯
                 t_offsets = token.get("offsets", {})
                 t_start = t_offsets.get("from", start_ms)
                 t_end = t_offsets.get("to", end_ms)

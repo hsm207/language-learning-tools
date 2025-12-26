@@ -19,9 +19,8 @@ class PyannoteDiarizer(IDiarizer):
             raise ValueError("❌ Missing HF_TOKEN! Pyannote needs a token to load gated SOTA models!")
 
         try:
-            self.logger.debug("Loading SOTA Pyannote community-1 diarization pipeline... 🚀✨")
+            self.logger.debug("Loading SOTA Pyannote community-1 diarization pipeline...")
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-            # Upgrade to the community-1 model for VBx clustering goodness! 🧩💎
             self.pipeline = Pipeline.from_pretrained(
                 "pyannote/speaker-diarization-community-1", 
                 token=token
@@ -37,14 +36,13 @@ class PyannoteDiarizer(IDiarizer):
 
     def diarize(self, audio: AudioArtifact, options: DiarizationOptions = None) -> List[Utterance]:
         """
-        Runs the SOTA Pyannote 4.0 community-1 pipeline to find speaker turns. 🕵️‍♀️🏷️
+        Runs the SOTA Pyannote 4.0 community-1 pipeline to find speaker turns.
         """
         if not self.pipeline:
             raise RuntimeError("Diarizer pipeline not initialized!")
 
         self.logger.debug(f"Running diarization on {audio.file_path} with options: {options}")
         
-        # Prepare kwargs for the pipeline
         kwargs = {}
         if options:
             if options.num_speakers is not None:
@@ -54,10 +52,7 @@ class PyannoteDiarizer(IDiarizer):
             if options.max_speakers is not None:
                 kwargs["max_speakers"] = options.max_speakers
 
-        # Run pipeline with dynamic options! 🚀✨
         output = self.pipeline(audio.file_path, **kwargs)
-        
-        # In 4.0+, the pipeline returns a DiarizeOutput wrapper 📄✨
         diarization = output.speaker_diarization
         
         turns = []
