@@ -1,2 +1,4 @@
 .env
 session.md
+output/
+!tests/data/speaker_verification.json
