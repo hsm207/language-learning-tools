@@ -53,7 +53,7 @@ class AudioProcessingPipeline:
                 for enricher in self.enrichers:
                     final_utterances = enricher.enrich(final_utterances, job.target_language)
             
-            job.add_utterances(final_utterances)
+            job.utterances = final_utterances
             job.status = JobStatus.COMPLETED
             self.logger.info(f"✅ Pipeline completed successfully for {job.id}!")
             
