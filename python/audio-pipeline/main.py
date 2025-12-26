@@ -35,7 +35,7 @@ def main():
     
     # 3. Execute
     logger.info("🚀 Starting SOTA Audio Pipeline...")
-    source = "/mnt/c/Users/mohds/Downloads/test_snippet.m4a"
+    source = "tests/data/test_10s.m4a"
     job = pipeline.execute(source, "de")
     
     if job.error_message:
