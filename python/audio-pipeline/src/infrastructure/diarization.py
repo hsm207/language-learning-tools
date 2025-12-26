@@ -41,7 +41,8 @@ class PyannoteDiarizer(IDiarizer):
 
         self.logger.debug(f"Running diarization on {audio.file_path}...")
         
-        diarization = self.pipeline(audio.file_path)
+        output = self.pipeline(audio.file_path)
+        diarization = output.speaker_diarization
         
         turns = []
         for segment, _, speaker in diarization.itertracks(yield_label=True):
