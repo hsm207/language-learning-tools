@@ -14,7 +14,7 @@ def main():
         model_path="/home/user/Documents/GitHub/whisper.cpp/models/ggml-large-v3.bin",
         logger=logger.get_child("Transcriber")
     )
-    diarizer = PyannoteDiarizer()
+    diarizer = PyannoteDiarizer(logger=logger.get_child("Diarizer"))
     
     # 2. Setup Application
     pipeline = AudioProcessingPipeline(

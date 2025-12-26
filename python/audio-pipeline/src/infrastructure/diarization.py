@@ -1,26 +1,62 @@
+import os
+import torch
 from typing import List
-from src.domain.interfaces import IDiarizer
+from datetime import timedelta
+from pyannote.audio import Pipeline
+from src.domain.interfaces import IDiarizer, ILogger, NullLogger
 from src.domain.entities import AudioArtifact
 from src.domain.value_objects import Utterance, TimestampRange, ConfidenceScore
-from datetime import timedelta
 
 class PyannoteDiarizer(IDiarizer):
-    def __init__(self, use_auth_token: str = None):
-        self.use_auth_token = use_auth_token
-        # In a real implementation, we'd initialize the pipeline here
-        # self.pipeline = Pipeline.from_pretrained("pyannote/speaker-diarization@3.1", use_auth_token=use_auth_token)
+    def __init__(self, logger: ILogger = NullLogger()):
+        self.logger = logger
+        self.pipeline = None
+        self._initialize_pipeline()
+
+    def _initialize_pipeline(self):
+        token = os.environ.get("HF_TOKEN")
+        if not token:
+            self.logger.error("❌ No HF_TOKEN found in environment! Pyannote needs a token for gated models, babe! 😱")
+            return
+
+        try:
+            self.logger.debug("Loading Pyannote 3.1 diarization pipeline...")
+            # Use GPU if available, otherwise CPU. SOTA flexibility! 💎
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            self.pipeline = Pipeline.from_pretrained(
+                "pyannote/speaker-diarization-3.1", 
+                use_auth_token=token
+            )
+            if self.pipeline:
+                self.pipeline.to(device)
+                self.logger.debug(f"Pyannote pipeline loaded on {device}!")
+        except Exception as e:
+            self.logger.error(f"Failed to load Pyannote pipeline: {str(e)}")
 
     def diarize(self, audio: AudioArtifact) -> List[Utterance]:
         """
-        Stub for Pyannote speaker diarization.
-        This will eventually use the SOTA 3.1 model to find speaker turns! 🏷️✨
+        Runs the SOTA Pyannote 3.1 pipeline to find speaker turns. 🕵️‍♀️🏷️
         """
-        # For now, return a placeholder turn so the pipeline doesn't crash
-        return [
-            Utterance(
-                timestamp=TimestampRange(timedelta(seconds=0), timedelta(seconds=3600)),
-                text="", # Diarizer doesn't provide text
-                speaker_id="SPEAKER_00",
-                confidence=ConfidenceScore(1.0)
-            )
-        ]
+        if not self.pipeline:
+            self.logger.error("Diarizer pipeline not initialized. Check your token, honey! 💋")
+            return []
+
+        self.logger.debug(f"Running diarization on {audio.file_path}...")
+        
+        # Pyannote returns an Annotation object
+        diarization = self.pipeline(audio.file_path)
+        
+        turns = []
+        for segment, _, speaker in diarization.itertracks(yield_label=True):
+            turns.append(Utterance(
+                timestamp=TimestampRange(
+                    start=timedelta(seconds=segment.start),
+                    end=timedelta(seconds=segment.end)
+                ),
+                text="", # Diarizer only knows WHO and WHEN, not WHAT!
+                speaker_id=speaker,
+                confidence=ConfidenceScore(1.0) # Pyannote provides scores, but keeping it simple for MVP
+            ))
+            
+        self.logger.debug(f"Diarization complete! Found {len(turns)} speaker turns.")
+        return turns
