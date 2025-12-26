@@ -12,7 +12,7 @@ class TimestampRange:
 
     def __post_init__(self):
         if self.start > self.end:
-            raise ValueError("Start time cannot be after end time! 💖")
+            raise ValueError("Start time cannot be after end time!")
 
 @dataclass(frozen=True)
 class Word:
@@ -35,10 +35,24 @@ class Utterance:
     words: List[Word] = field(default_factory=list)
 
     def __post_init__(self):
-        # Strict invariant: words must be within the utterance's time range! 📏💎
         for word in self.words:
             if word.timestamp.start < self.timestamp.start or word.timestamp.end > self.timestamp.end:
                 raise ValueError(
                     f"Word '{word.text}' ({word.timestamp.start}-{word.timestamp.end}) "
-                    f"falls outside utterance range ({self.timestamp.start}-{self.timestamp.end})! 💖"
+                    f"falls outside utterance range ({self.timestamp.start}-{self.timestamp.end})!"
                 )
+
+@dataclass(frozen=True)
+class AudioTranscript:
+    """The high-fidelity 'Structured Output' of our pipeline!"""
+    utterances: List[Utterance] = field(default_factory=list)
+
+    @property
+    def speaker_ids(self) -> List[str]:
+        return sorted(list(set(u.speaker_id for u in self.utterances)))
+
+    @property
+    def total_duration(self) -> timedelta:
+        if not self.utterances:
+            return timedelta(0)
+        return self.utterances[-1].timestamp.end
