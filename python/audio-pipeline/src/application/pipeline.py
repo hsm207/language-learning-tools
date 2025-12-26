@@ -1,9 +1,8 @@
-from typing import List
+from typing import List, Optional
 from uuid import UUID
-from src.application.services import AlignmentService
-from src.domain.interfaces import ITranscriber, IDiarizer, IAudioProcessor, IAudioEnricher, ILogger, NullLogger
+from src.domain.interfaces import ITranscriber, IDiarizer, IAudioProcessor, IAudioEnricher, ILogger, NullLogger, IAlignmentService
 from src.domain.entities import ProcessingJob, JobStatus
-from src.domain.value_objects import LanguageTag
+from src.domain.value_objects import LanguageTag, DiarizationOptions
 
 class AudioProcessingPipeline:
     def __init__(
@@ -11,7 +10,7 @@ class AudioProcessingPipeline:
         audio_processor: IAudioProcessor,
         transcriber: ITranscriber,
         diarizer: IDiarizer,
-        alignment_service: AlignmentService,
+        alignment_service: IAlignmentService,
         logger: ILogger = NullLogger(),
         enrichers: List[IAudioEnricher] = None
     ):
@@ -22,7 +21,7 @@ class AudioProcessingPipeline:
         self.logger = logger
         self.enrichers = enrichers or []
 
-    def execute(self, source_path: str, language: str) -> ProcessingJob:
+    def execute(self, source_path: str, language: str, diarization_options: DiarizationOptions = None) -> ProcessingJob:
         job = ProcessingJob(source_path=source_path, target_language=LanguageTag(language))
         
         try:
@@ -41,7 +40,7 @@ class AudioProcessingPipeline:
             # 3. Diarize
             self.logger.info(f"🕵️‍♀️ Diarizing audio turns...")
             job.status = JobStatus.DIARIZING
-            diarized_segments = self.diarizer.diarize(artifact) or []
+            diarized_segments = self.diarizer.diarize(artifact, options=diarization_options) or []
             self.logger.debug(f"Diarization found {len(diarized_segments)} turns.")
             
             # 4. Align

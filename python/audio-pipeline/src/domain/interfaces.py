@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List
-from src.domain.value_objects import Utterance, LanguageTag
+from src.domain.value_objects import Utterance, LanguageTag, DiarizationOptions
 from src.domain.entities import AudioArtifact
 
 class ITranscriber(ABC):
@@ -10,7 +10,12 @@ class ITranscriber(ABC):
 
 class IDiarizer(ABC):
     @abstractmethod
-    def diarize(self, audio: AudioArtifact) -> List[Utterance]:
+    def diarize(self, audio: AudioArtifact, options: DiarizationOptions = None) -> List[Utterance]:
+        pass
+
+class IAlignmentService(ABC):
+    @abstractmethod
+    def align(self, transcription: List[Utterance], diarization: List[Utterance]) -> List[Utterance]:
         pass
 
 class IAudioEnricher(ABC):

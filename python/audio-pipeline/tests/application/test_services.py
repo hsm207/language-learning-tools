@@ -1,9 +1,10 @@
 from datetime import timedelta
 from src.domain.value_objects import Utterance, TimestampRange, ConfidenceScore
-from src.application.services import AlignmentService
+from src.application.services import MaxOverlapAlignmentService
 
-def test_align_perfect_match():
-    service = AlignmentService()
+def test_alignment_service_simple():
+    # Arrange
+    service = MaxOverlapAlignmentService()
     
     # Transcription: "Hello" at 1-2s
     transcription = [
@@ -32,7 +33,7 @@ def test_align_perfect_match():
     assert result[0].speaker_id == "Speaker A"
 
 def test_align_no_overlap_defaults_to_unknown():
-    service = AlignmentService()
+    service = MaxOverlapAlignmentService()
     
     transcription = [
         Utterance(

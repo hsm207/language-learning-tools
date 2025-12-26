@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import timedelta
-from typing import NewType, List
+from typing import NewType, List, Optional
 
 LanguageTag = NewType("LanguageTag", str)
 ConfidenceScore = NewType("ConfidenceScore", float)
@@ -19,6 +19,12 @@ class Word:
     text: str
     timestamp: TimestampRange
     confidence: ConfidenceScore
+
+@dataclass(frozen=True)
+class DiarizationOptions:
+    num_speakers: Optional[int] = None
+    min_speakers: Optional[int] = None
+    max_speakers: Optional[int] = None
 
 @dataclass(frozen=True)
 class Utterance:

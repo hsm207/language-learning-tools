@@ -9,7 +9,7 @@ from src.infrastructure.transcription import WhisperTranscriber
 from src.infrastructure.audio import FFmpegAudioProcessor
 from src.infrastructure.diarization import PyannoteDiarizer
 from src.application.pipeline import AudioProcessingPipeline
-from src.application.services import AlignmentService
+from src.application.services import MaxOverlapAlignmentService
 from src.domain.entities import JobStatus
 
 # Only run this if we explicitly want to wait for the real models! 🦕💎
@@ -30,7 +30,7 @@ def test_pipeline_end_to_end_real_components():
         audio_processor=audio_processor,
         transcriber=transcriber,
         diarizer=diarizer,
-        alignment_service=AlignmentService()
+        alignment_service=MaxOverlapAlignmentService()
     )
     
     # 2. Execute on 10s snippet in a temp directory 🧼✨
