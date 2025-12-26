@@ -37,7 +37,7 @@ class ILogger(ABC):
         pass
 
 class NullLogger(ILogger):
-    """The silent treatment, but for code! 🤫💖"""
+    """The Null logger implementation. 🤫💖"""
     def info(self, message: str): pass
     def debug(self, message: str): pass
     def error(self, message: str): pass

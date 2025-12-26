@@ -12,7 +12,7 @@ class TimestampRange:
 
     def __post_init__(self):
         if self.start > self.end:
-            raise ValueError("Start time cannot be after end time, silly! 💖")
+            raise ValueError("Start time cannot be after end time! 💖")
 
 @dataclass(frozen=True)
 class Utterance:

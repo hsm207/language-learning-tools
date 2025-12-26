@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-load_dotenv() # Load your sexy HF_TOKEN! 🔐✨
+load_dotenv() # Load your detailed HF_TOKEN! 🔐✨
 from src.infrastructure.transcription import WhisperTranscriber
 from src.infrastructure.audio import FFmpegAudioProcessor
 from src.infrastructure.diarization import PyannoteDiarizer
@@ -33,9 +33,9 @@ def main():
     job = pipeline.execute(source, "de")
     
     if job.error_message:
-        print(f"❌ Job failed, babe! {job.error_message}")
+        print(f"❌ Job failed! {job.error_message}")
     else:
-        print(f"✨ Job {job.id} completed with {len(job.utterances)} utterances!")
+        print(f"✨ Job {job.id} completed successfully with {len(job.utterances)} utterances!")
         # For now, just print the first few
         for u in job.utterances[:5]:
             print(f"[{u.timestamp.start} - {u.timestamp.end}] {u.speaker_id}: {u.text}")

@@ -12,7 +12,7 @@ class FFmpegAudioProcessor(IAudioProcessor):
         Uses ffmpeg to normalize audio to 16kHz, mono, 16-bit PCM WAV.
         """
         if not os.path.exists(source_path):
-            raise FileNotFoundError(f"Babe, I can't find the file at {source_path}! 😱")
+            raise FileNotFoundError(f"Audio file not found at {source_path}! 😱")
 
         output_path = source_path.rsplit(".", 1)[0] + "_normalized.wav"
         
@@ -28,7 +28,7 @@ class FFmpegAudioProcessor(IAudioProcessor):
         
         result = subprocess.run(command, capture_output=True, text=True)
         if result.returncode != 0:
-            raise RuntimeError(f"FFmpeg failed, honey! Error: {result.stderr}")
+            raise RuntimeError(f"FFmpeg failed! Error: {result.stderr}")
             
         return AudioArtifact(
             file_path=output_path,

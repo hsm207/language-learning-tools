@@ -23,7 +23,7 @@ class WhisperTranscriber(ITranscriber):
             "-m", self.model_path,
             "-f", audio.file_path,
             "-l", str(language),
-            "-oj", # Output JSON for sexy metadata
+            "-oj", # Output JSON for detailed metadata
             "-of", output_base,
             "-t", "8" # Using 8 threads for speed! 💨
         ]
@@ -32,7 +32,7 @@ class WhisperTranscriber(ITranscriber):
             
         result = subprocess.run(command, capture_output=True, text=True)
         if result.returncode != 0:
-            raise RuntimeError(f"Whisper failed, sugar! Error: {result.stderr}")
+            raise RuntimeError(f"Whisper failed! Error: {result.stderr}")
             
         json_path = f"{output_base}.json"
         self.logger.debug(f"Parsing Whisper output from {json_path}")

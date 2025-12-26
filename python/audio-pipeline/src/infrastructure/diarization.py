@@ -16,7 +16,7 @@ class PyannoteDiarizer(IDiarizer):
     def _initialize_pipeline(self):
         token = os.environ.get("HF_TOKEN")
         if not token:
-            raise ValueError("❌ Missing HF_TOKEN! Pyannote needs a token to load gated SOTA models, honey! 💋")
+            raise ValueError("❌ Missing HF_TOKEN! Pyannote needs a token to load gated SOTA models!")
 
         try:
             self.logger.debug("Loading SOTA Pyannote 4.0.3 diarization pipeline...")
@@ -30,7 +30,7 @@ class PyannoteDiarizer(IDiarizer):
                 self.pipeline.to(device)
                 self.logger.debug(f"Pyannote pipeline loaded on {device}!")
             else:
-                raise RuntimeError("Diarizer pipeline failed to load, babe! 😱")
+                raise RuntimeError("Diarizer pipeline failed to load! 😱")
         except Exception as e:
             self.logger.error(f"Failed to load Pyannote pipeline: {str(e)}")
             raise
@@ -40,7 +40,7 @@ class PyannoteDiarizer(IDiarizer):
         Runs the SOTA Pyannote 4.0.3 pipeline to find speaker turns. 🕵️‍♀️🏷️
         """
         if not self.pipeline:
-            raise RuntimeError("Diarizer pipeline not initialized, honey! 💋")
+            raise RuntimeError("Diarizer pipeline not initialized!")
 
         self.logger.debug(f"Running diarization on {audio.file_path}...")
         

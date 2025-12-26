@@ -11,7 +11,7 @@ def test_pyannote_diarizer_initialization_fails_without_token(mocker):
         PyannoteDiarizer()
 
 def test_pyannote_diarizer_parses_output_correctly(mocker):
-    # 1. Setup Mocks using the sexy mocker fixture 💉✨
+    # 1. Setup Mocks using the detailed mocker fixture 💉✨
     mocker.patch.dict("os.environ", {"HF_TOKEN": "hf_test_token"})
     
     # Mock the Pipeline class and its return values
