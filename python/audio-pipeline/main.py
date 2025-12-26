@@ -6,6 +6,7 @@ from src.infrastructure.diarization import PyannoteDiarizer
 from src.infrastructure.logging import LocalLogger # 📄✨
 from src.application.pipeline import AudioProcessingPipeline
 from src.application.services import AlignmentService
+from src.application.enrichers import SentenceSegmentationEnricher
 
 def main():
     # 1. Setup Infrastructure
@@ -19,12 +20,17 @@ def main():
     diarizer = PyannoteDiarizer(logger=logger.get_child("Diarizer"))
     
     # 2. Setup Application
+    enrichers = [
+        SentenceSegmentationEnricher(max_duration_seconds=15.0)
+    ]
+    
     pipeline = AudioProcessingPipeline(
         audio_processor=audio_processor,
         transcriber=transcriber,
         diarizer=diarizer,
         alignment_service=AlignmentService(),
-        logger=logger.get_child("Orchestrator") # 💉💖
+        logger=logger.get_child("Orchestrator"),
+        enrichers=enrichers
     )
     
     # 3. Execute
