@@ -5,7 +5,7 @@ from typing import List
 from datetime import timedelta
 from src.domain.interfaces import ITranscriber, ILogger, NullLogger
 from src.domain.entities import AudioArtifact
-from src.domain.value_objects import Utterance, LanguageTag, TimestampRange, ConfidenceScore
+from src.domain.value_objects import Utterance, LanguageTag, TimestampRange, ConfidenceScore, Word
 
 class WhisperTranscriber(ITranscriber):
     def __init__(self, executable_path: str, model_path: str, logger: ILogger = NullLogger()):
@@ -55,6 +55,37 @@ class WhisperTranscriber(ITranscriber):
             end_ms = offsets.get("to", 0)
             text = segment.get("text", "").strip()
             
+            # Extract word-level data if available (tokens) 🕵️‍♀️
+            words = []
+            for token in segment.get("tokens", []):
+                t_text = token.get("text", "").strip()
+                if not t_text:
+                    continue
+                
+                # Some tokens are special characters or [BEAT], we might want to filter or handle them
+                # For now, let's treat each token as a "word" for simplicity
+                t_start = token.get("t0", 0) * 10 # whisper.cpp t0/t1 are often in 1/100s of sec? 
+                t_end = token.get("t1", 0) * 10   # Actually, it depends on the version. 
+                # Let's assume they are in milliseconds if it's whisper-cli -oj.
+                # Actually, in whisper.cpp's JSON, t0 and t1 are usually in milliseconds if they match segment offsets.
+                
+                # Wait, let's look at the segment offsets: start_ms is offsets.get("from")
+                # If t0 is 0 and start_ms is 500, then the absolute time is start_ms + t0? 
+                # No, usually t0/t1 in tokens are absolute from start of audio.
+                
+                t_start = token.get("t0", start_ms)
+                t_end = token.get("t1", end_ms)
+                t_conf = token.get("p", 1.0)
+                
+                words.append(Word(
+                    text=t_text,
+                    timestamp=TimestampRange(
+                        start=timedelta(milliseconds=t_start),
+                        end=timedelta(milliseconds=t_end)
+                    ),
+                    confidence=ConfidenceScore(t_conf)
+                ))
+            
             utterances.append(Utterance(
                 timestamp=TimestampRange(
                     start=timedelta(milliseconds=start_ms),
@@ -62,7 +93,8 @@ class WhisperTranscriber(ITranscriber):
                 ),
                 text=text,
                 speaker_id="Unknown",
-                confidence=ConfidenceScore(1.0)
+                confidence=ConfidenceScore(1.0),
+                words=words
             ))
             
         self.logger.debug(f"Raw transcription found {len(utterances)} segments.")
