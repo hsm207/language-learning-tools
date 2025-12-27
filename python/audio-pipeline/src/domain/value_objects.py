@@ -37,6 +37,7 @@ class Utterance:
     speaker_id: str
     confidence: ConfidenceScore
     words: List[Word] = field(default_factory=list)
+    translated_text: Optional[str] = None
 
     def __post_init__(self):
         for word in self.words:
@@ -55,6 +56,7 @@ class AudioTranscript:
     """The high-fidelity 'Structured Output' of our pipeline!"""
 
     utterances: List[Utterance] = field(default_factory=list)
+    target_language: Optional[LanguageTag] = None
 
     @property
     def speaker_ids(self) -> List[str]:

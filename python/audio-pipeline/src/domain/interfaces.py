@@ -42,6 +42,14 @@ class IAudioProcessor(ABC):
         pass
 
 
+class ITranslator(ABC):
+    @abstractmethod
+    def translate(
+        self, texts: List[str], source_lang: LanguageTag, target_lang: LanguageTag
+    ) -> List[str]:
+        pass
+
+
 class ILogger(ABC):
     @abstractmethod
     def info(self, message: str):
