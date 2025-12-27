@@ -8,7 +8,7 @@ from src.infrastructure.logging import LocalLogger
 from src.infrastructure.serialization import JsonTranscriptSerializer
 from src.application.pipeline import AudioProcessingPipeline
 from src.application.services import MaxOverlapAlignmentService
-from src.application.enrichers import SentenceSegmentationEnricher
+from src.application.enrichers import SentenceSegmentationEnricher, TokenMergerEnricher
 from src.domain.value_objects import DiarizationOptions
 
 def main():
@@ -39,8 +39,9 @@ def main():
     serializer = JsonTranscriptSerializer()
     
     # 2. Setup Application
-    enrichers = [
-        SentenceSegmentationEnricher(max_duration_seconds=15.0)
+    enrichment_chain = [
+        SentenceSegmentationEnricher(max_duration_seconds=15.0),
+        TokenMergerEnricher()
     ]
     
     pipeline = AudioProcessingPipeline(
