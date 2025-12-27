@@ -7,6 +7,7 @@
     <style>
         :root {
             --primary: #ff6b6b;
+            --primary-soft: #ffb8b8;
             --secondary: #4ecdc4;
             --bg: #f7f9fc;
             --text: #2d3436;
@@ -65,11 +66,6 @@
             font-size: 0.8rem;
         }
 
-        audio {
-            width: 100%;
-            margin-bottom: 2rem;
-        }
-
         .transcript-row {
             display: flex;
             align-items: center;
@@ -125,16 +121,36 @@
         .word {
             display: inline-block;
             margin-right: 0.2rem;
-            padding: 0 0.1rem;
-            border-radius: 3px;
-            transition: all 0.05s;
+            padding: 0 0.2rem;
+            border-radius: 4px;
+            transition: all 0.1s;
+            color: #b2bec3;
         }
 
         .word.active {
             background-color: var(--primary);
-            color: white;
+            color: white !important;
             transform: scale(1.15);
-            box-shadow: 0 2px 5px rgba(255, 107, 107, 0.4);
+            box-shadow: 0 4px 10px rgba(255, 107, 107, 0.4);
+            font-weight: bold;
+            z-index: 10;
+        }
+
+        .word.passed {
+            background-color: var(--primary-soft);
+            color: var(--text);
+            opacity: 0.8;
+        }
+
+        .word.future {
+            color: var(--text);
+        }
+
+        .status-bar {
+            text-align: center;
+            font-size: 0.8rem;
+            color: #b2bec3;
+            margin-bottom: 1rem;
         }
 
         .empty-state {
@@ -161,7 +177,7 @@
             </div>
         </div>
 
-        <audio id="audioPlayer" controls></audio>
+        <div id="status" class="status-bar">Audio Context: Not Started 💤</div>
         
         <div id="transcript">
             <div class="empty-state">Upload your files to start the magic! ✨</div>
@@ -169,177 +185,263 @@
     </div>
 
     <script>
-        const jsonInput = document.getElementById('jsonInput');
-        const audioInput = document.getElementById('audioInput');
-        const audioPlayer = document.getElementById('audioPlayer');
-        const transcriptEl = document.getElementById('transcript');
+        /** 
+         * 🎧 AUDIO ENGINE 
+         * Responsible for low-level Web Audio API interactions.
+         */
+        class AudioEngine {
+            constructor() {
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                this.buffer = null;
+                this.currentSource = null;
+            }
 
-        let transcriptData = null;
-        let activeRowIdx = -1;
-        let isLooping = false;
+            async decode(arrayBuffer) {
+                this.buffer = await this.ctx.decodeAudioData(arrayBuffer);
+                return this.buffer;
+            }
 
-        // 1. Handle JSON Upload
-        jsonInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
+            async playRange(start, duration, onEnded) {
+                if (!this.buffer) throw new Error("Audio buffer not loaded");
+                if (this.ctx.state === 'suspended') await this.ctx.resume();
 
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                try {
-                    transcriptData = JSON.parse(event.target.result);
-                    renderTranscript();
-                } catch (err) {
-                    alert("❌ Invalid JSON file! 💖");
+                this.stop();
+
+                const source = this.ctx.createBufferSource();
+                source.buffer = this.buffer;
+                source.connect(this.ctx.destination);
+                
+                // Snappy lead time for hardware warm-up
+                const leadTime = 0.1;
+                const startTime = this.ctx.currentTime + leadTime;
+                
+                source.start(startTime, start, duration);
+                source.onended = onEnded;
+                
+                this.currentSource = source;
+                return startTime;
+            }
+
+            stop() {
+                if (this.currentSource) {
+                    this.currentSource.onended = null;
+                    try { this.currentSource.stop(); } catch(e) {}
+                    this.currentSource = null;
                 }
-            };
-            reader.readAsText(file);
-        });
+            }
 
-        // 2. Handle Audio Upload
-        audioInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            audioPlayer.src = URL.createObjectURL(file);
-        });
+            get currentTime() { return this.ctx.currentTime; }
+            get outputLatency() { return this.ctx.outputLatency || 0.0; }
+        }
 
-        // 3. Render the UI
-        function renderTranscript() {
-            if (!transcriptData || !transcriptData.utterances) return;
-            
-            transcriptEl.innerHTML = '';
-            
-            transcriptData.utterances.forEach((u, uIdx) => {
+        /**
+         * 🎨 TRANSCRIPT UI
+         * Responsible for DOM manipulation and rendering.
+         */
+        class TranscriptUI {
+            constructor(containerId, statusId) {
+                this.container = document.getElementById(containerId);
+                this.status = document.getElementById(statusId);
+            }
+
+            setStatus(text) { this.status.innerText = text; }
+
+            render(data, onPlay, onLoop) {
+                this.container.innerHTML = '';
+                data.utterances.forEach((u, idx) => {
+                    const row = this._createRow(u, idx, onPlay, onLoop);
+                    this.container.appendChild(row);
+                });
+            }
+
+            updateHighlight(rowIdx, now, utterances) {
+                const row = document.getElementById(`row-${rowIdx}`);
+                if (!row) return;
+
+                const utterance = utterances[rowIdx];
+                const wordEls = row.querySelectorAll('.word');
+                
+                let focusIdx = -1;
+                utterance.words.forEach((w, i) => {
+                    if (now >= w.start && now < w.end) focusIdx = i;
+                });
+
+                wordEls.forEach((el, i) => {
+                    const wStart = parseFloat(el.dataset.start);
+                    el.classList.remove('active', 'passed', 'future');
+                    
+                    if (i === focusIdx) el.classList.add('active');
+                    else if (now >= wStart) el.classList.add('passed');
+                    else el.classList.add('future');
+                });
+            }
+
+            resetAllHighlights() {
+                document.querySelectorAll('.word').forEach(el => {
+                    el.classList.remove('active', 'passed');
+                    el.classList.add('future');
+                });
+            }
+
+            updateButtonStates(activeRowIdx, isPlaying, isLooping) {
+                document.querySelectorAll('.control-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.id.startsWith('play-')) btn.innerText = '▶ Play';
+                });
+
+                if (activeRowIdx !== -1) {
+                    const playBtn = document.getElementById(`play-${activeRowIdx}`);
+                    const loopBtn = document.getElementById(`loop-${activeRowIdx}`);
+                    if (isPlaying) {
+                        playBtn.innerText = '⏹ Stop';
+                        playBtn.classList.add('active');
+                    }
+                    if (isLooping) loopBtn.classList.add('active');
+                }
+            }
+
+            _createRow(u, idx, onPlay, onLoop) {
                 const row = document.createElement('div');
                 row.className = 'transcript-row';
-                row.id = `row-${uIdx}`;
+                row.id = `row-${idx}`;
 
-                const controls = document.createElement('div');
-                controls.className = 'row-controls';
-                
-                const playBtn = document.createElement('button');
-                playBtn.className = 'control-btn';
-                playBtn.id = `play-${uIdx}`;
-                playBtn.innerText = '▶ Play';
-                playBtn.onclick = () => toggleRowPlayback(uIdx);
+                row.innerHTML = `
+                    <div class="row-controls">
+                        <button class="control-btn" id="play-${idx}">▶ Play</button>
+                        <button class="control-btn" id="loop-${idx}">🔄 Loop</button>
+                    </div>
+                    <div class="speaker-label">
+                        ${u.speaker_id}<br>
+                        <small style="color:#b2bec3">${u.start.toFixed(2)} - ${u.end.toFixed(2)}s</small>
+                    </div>
+                    <div class="content">
+                        ${u.words.map((w, wi) => `
+                            <span class="word future" id="w-${idx}-${wi}" 
+                                  data-start="${w.start}" data-end="${w.end}">${w.text}</span>
+                        `).join(' ')}
+                    </div>
+                `;
 
-                const loopBtn = document.createElement('button');
-                loopBtn.className = 'control-btn';
-                loopBtn.id = `loop-${uIdx}`;
-                loopBtn.innerText = '🔄 Loop';
-                loopBtn.onclick = () => toggleRowLoop(uIdx);
-
-                controls.appendChild(playBtn);
-                controls.appendChild(loopBtn);
-
-                const speaker = document.createElement('div');
-                speaker.className = 'speaker-label';
-                speaker.innerText = u.speaker_id;
-
-                const content = document.createElement('div');
-                content.className = 'content';
-                
-                u.words.forEach((w, wIdx) => {
-                    const wordSpan = document.createElement('span');
-                    wordSpan.className = 'word';
-                    wordSpan.id = `w-${uIdx}-${wIdx}`;
-                    wordSpan.innerText = w.text;
-                    wordSpan.dataset.start = w.start;
-                    wordSpan.dataset.end = w.end;
-                    content.appendChild(wordSpan);
-                    content.appendChild(document.createTextNode(' '));
-                });
-
-                row.appendChild(controls);
-                row.appendChild(speaker);
-                row.appendChild(content);
-                transcriptEl.appendChild(row);
-            });
-        }
-
-        function toggleRowPlayback(idx) {
-            const u = transcriptData.utterances[idx];
-            
-            if (activeRowIdx === idx && !audioPlayer.paused) {
-                audioPlayer.pause();
-                updateButtonStates();
-            } else {
-                activeRowIdx = idx;
-                isLooping = false; // Playing usually resets loop unless we click loop
-                audioPlayer.currentTime = u.start;
-                audioPlayer.play();
-                updateButtonStates();
+                row.querySelector(`#play-${idx}`).onclick = () => onPlay(idx);
+                row.querySelector(`#loop-${idx}`).onclick = () => onLoop(idx);
+                return row;
             }
         }
 
-        function toggleRowLoop(idx) {
-            if (activeRowIdx === idx && isLooping) {
-                isLooping = false;
-            } else {
-                activeRowIdx = idx;
-                isLooping = true;
-                const u = transcriptData.utterances[idx];
-                audioPlayer.currentTime = u.start;
-                audioPlayer.play();
-            }
-            updateButtonStates();
-        }
-
-        function updateButtonStates() {
-            document.querySelectorAll('.control-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.control-btn').forEach(btn => {
-                if (btn.id.startsWith('play-')) btn.innerText = '▶ Play';
-            });
-
-            if (activeRowIdx !== -1) {
-                const playBtn = document.getElementById(`play-${activeRowIdx}`);
-                const loopBtn = document.getElementById(`loop-${activeRowIdx}`);
+        /**
+         * 🎮 APPLICATION CONTROLLER
+         * Orchestrates the show.
+         */
+        class App {
+            constructor() {
+                this.audio = new AudioEngine();
+                this.ui = new TranscriptUI('transcript', 'status');
                 
-                if (!audioPlayer.paused) {
-                    playBtn.innerText = '⏸ Pause';
-                    playBtn.classList.add('active');
-                }
-                if (isLooping) {
-                    loopBtn.classList.add('active');
-                }
+                this.transcriptData = null;
+                this.activeRowIdx = -1;
+                this.isLooping = false;
+                this.playbackStartTime = 0;
+                this.playbackOffset = 0;
+
+                this._setupInputs();
+                this._startSyncLoop();
             }
-        }
 
-        // 4. Real-time Logic Loop 🔄
-        function update() {
-            if (!audioPlayer.paused && transcriptData) {
-                const now = audioPlayer.currentTime;
-                
-                // Row bounding logic
-                if (activeRowIdx !== -1) {
-                    const u = transcriptData.utterances[activeRowIdx];
-                    if (now >= u.end) {
-                        if (isLooping) {
-                            audioPlayer.currentTime = u.start;
-                        } else {
-                            audioPlayer.pause();
-                            updateButtonStates();
-                        }
-                    }
-                }
+            _setupInputs() {
+                document.getElementById('jsonInput').onchange = async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const text = await file.text();
+                    this.transcriptData = JSON.parse(text);
+                    window.transcriptData = this.transcriptData; // For audit
+                    this.ui.render(this.transcriptData, 
+                        (i) => this.togglePlayback(i), 
+                        (i) => this.toggleLoop(i)
+                    );
+                };
 
-                // Highlighting
-                document.querySelectorAll('.word').forEach(el => {
-                    const start = parseFloat(el.dataset.start);
-                    const end = parseFloat(el.dataset.end);
-                    if (now >= start && now <= end) {
-                        el.classList.add('active');
+                document.getElementById('audioInput').onchange = async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    this.ui.setStatus("⏳ Decoding Audio... 🧩");
+                    const buffer = await this.audio.decode(await file.arrayBuffer());
+                    this.ui.setStatus(`✅ Audio Ready! (${buffer.duration.toFixed(2)}s)`);
+                };
+            }
+
+            async playRow(idx, loop = false) {
+                const u = this.transcriptData.utterances[idx];
+                this.activeRowIdx = idx;
+                this.isLooping = loop;
+                this.playbackOffset = u.start;
+
+                this.playbackStartTime = await this.audio.playRange(u.start, u.end - u.start, () => {
+                    if (this.isLooping && this.activeRowIdx !== -1) {
+                        this.playRow(this.activeRowIdx, true);
                     } else {
-                        el.classList.remove('active');
+                        this.audio.stop();
+                        this.ui.updateButtonStates(this.activeRowIdx, false, this.isLooping);
+                        // Enter Visual Post-Roll Snap
+                        setTimeout(() => {
+                            if (!this.audio.currentSource) {
+                                this.activeRowIdx = -1;
+                                this.playbackStartTime = 0;
+                                this.ui.updateButtonStates(-1, false, false);
+                            }
+                        }, 800);
                     }
                 });
+
+                this.ui.updateButtonStates(this.activeRowIdx, true, this.isLooping);
             }
-            requestAnimationFrame(update);
+
+            togglePlayback(idx) {
+                if (this.activeRowIdx === idx && this.audio.currentSource) {
+                    this.audio.stop();
+                    this.activeRowIdx = -1;
+                    this.isLooping = false;
+                } else {
+                    this.playRow(idx, false);
+                }
+                this.ui.updateButtonStates(this.activeRowIdx, !!this.audio.currentSource, this.isLooping);
+            }
+
+            toggleLoop(idx) {
+                if (this.activeRowIdx === idx && this.isLooping) {
+                    this.isLooping = false;
+                } else {
+                    this.playRow(idx, true);
+                }
+                this.ui.updateButtonStates(this.activeRowIdx, !!this.audio.currentSource, this.isLooping);
+            }
+
+            _startSyncLoop() {
+                const loop = () => {
+                    if (this.activeRowIdx !== -1 && this.transcriptData) {
+                        let now;
+                        const utterance = this.transcriptData.utterances[this.activeRowIdx];
+                        const latency = this.audio.outputLatency;
+
+                        if (this.audio.currentSource || (this.playbackStartTime > 0 && this.audio.currentTime < this.playbackStartTime)) {
+                            const elapsed = this.audio.currentTime - this.playbackStartTime;
+                            now = this.playbackOffset + elapsed - latency;
+                        } else if (this.playbackStartTime > 0) {
+                            now = utterance.end;
+                        } else {
+                            now = utterance.start - 1;
+                        }
+
+                        this.ui.updateHighlight(this.activeRowIdx, now, this.transcriptData.utterances);
+                    } else {
+                        this.ui.resetAllHighlights();
+                    }
+                    requestAnimationFrame(loop);
+                };
+                requestAnimationFrame(loop);
+            }
         }
 
-        audioPlayer.onpause = updateButtonStates;
-        audioPlayer.onplay = updateButtonStates;
-
-        requestAnimationFrame(update);
+        new App();
     </script>
 </body>
 </html>
