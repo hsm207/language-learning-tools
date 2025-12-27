@@ -12,29 +12,30 @@ from src.domain.value_objects import (
 def test_sentence_segmentation_enricher_splits_long_monologue():
     # Arrange
     # A long monologue (20 seconds) with two sentences
+    # Using Whisper-style tokens (with leading spaces) 🧩✨
     words = [
         Word(
-            "Hello",
+            " Hello",
             TimestampRange(timedelta(seconds=0), timedelta(seconds=1)),
             ConfidenceScore(1.0),
         ),
         Word(
-            "world.",
+            " world.",
             TimestampRange(timedelta(seconds=1), timedelta(seconds=2)),
             ConfidenceScore(1.0),
         ),
         Word(
-            "This",
+            " This",
             TimestampRange(timedelta(seconds=11), timedelta(seconds=12)),
             ConfidenceScore(1.0),
         ),
         Word(
-            "is",
+            " is",
             TimestampRange(timedelta(seconds=12), timedelta(seconds=13)),
             ConfidenceScore(1.0),
         ),
         Word(
-            "long.",
+            " long.",
             TimestampRange(timedelta(seconds=13), timedelta(seconds=14)),
             ConfidenceScore(1.0),
         ),
@@ -42,14 +43,14 @@ def test_sentence_segmentation_enricher_splits_long_monologue():
 
     utterance = Utterance(
         timestamp=TimestampRange(timedelta(seconds=0), timedelta(seconds=14)),
-        text="Hello world. This is long.",
+        text=" Hello world. This is long.",
         speaker_id="Speaker1",
         confidence=ConfidenceScore(1.0),
         words=words,
     )
 
     # Max duration 1 second.
-    # The first sentence "Hello world." ends at 2s.
+    # The first sentence " Hello world." ends at 2s.
     # 2s >= 1s, so it should split!
     enricher = SentenceSegmentationEnricher(max_duration_seconds=1.0)
 

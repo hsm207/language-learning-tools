@@ -3,7 +3,7 @@ import dataclasses
 import logging
 from typing import List
 from datetime import timedelta
-from src.domain.interfaces import IAudioEnricher
+from src.domain.interfaces import IAudioEnricher, ILogger, NullLogger
 from src.domain.value_objects import (
     Utterance,
     LanguageTag,
@@ -19,11 +19,13 @@ class SentenceSegmentationEnricher(IAudioEnricher):
     Operates on atomic units (tokens/words) to ensure surgical precision! 🎯✂️
     """
 
-    def __init__(self, max_duration_seconds: float = 15.0):
+    def __init__(
+        self, max_duration_seconds: float = 15.0, logger: ILogger = NullLogger()
+    ):
         self.max_duration_seconds = max_duration_seconds
         # Match tokens that end with terminal punctuation
         self.sentence_end_regex = re.compile(r".*[.!?]$")
-        self.logger = logging.getLogger("SentenceSegmentationEnricher")
+        self.logger = logger
 
     def enrich(
         self, utterances: List[Utterance], language: LanguageTag

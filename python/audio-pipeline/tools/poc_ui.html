@@ -120,8 +120,7 @@
 
         .word {
             display: inline-block;
-            margin-right: 0.2rem;
-            padding: 0 0.2rem;
+            padding: 0 0.05rem;
             border-radius: 4px;
             transition: all 0.1s;
             color: #b2bec3;
@@ -130,7 +129,7 @@
         .word.active {
             background-color: var(--primary);
             color: white !important;
-            transform: scale(1.15);
+            transform: scale(1.1);
             box-shadow: 0 4px 10px rgba(255, 107, 107, 0.4);
             font-weight: bold;
             z-index: 10;
@@ -315,10 +314,7 @@
                         <small style="color:#b2bec3">${u.start.toFixed(2)} - ${u.end.toFixed(2)}s</small>
                     </div>
                     <div class="content">
-                        ${u.words.map((w, wi) => `
-                            <span class="word future" id="w-${idx}-${wi}" 
-                                  data-start="${w.start}" data-end="${w.end}">${w.text}</span>
-                        `).join(' ')}
+                        ${u.words.map((w, wi) => `<span class="word future" id="w-${idx}-${wi}" data-start="${w.start}" data-end="${w.end}">${w.text}</span>`).join(' ')}
                     </div>
                 `;
 
