@@ -4,6 +4,7 @@ from uuid import UUID, uuid4
 from typing import List, Optional
 from src.domain.value_objects import Utterance, LanguageTag, AudioTranscript
 
+
 class JobStatus(Enum):
     CREATED = auto()
     INGESTED = auto()
@@ -13,12 +14,14 @@ class JobStatus(Enum):
     COMPLETED = auto()
     FAILED = auto()
 
+
 @dataclass
 class AudioArtifact:
     id: UUID = field(default_factory=uuid4)
     file_path: str = ""
     format: str = ""
     sample_rate: int = 16000
+
 
 @dataclass
 class ProcessingJob:

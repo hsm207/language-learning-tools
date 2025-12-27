@@ -1,12 +1,13 @@
 import json
 from src.domain.value_objects import AudioTranscript, Utterance, Word
 
+
 class JsonTranscriptSerializer:
     """
     Infrastructure service to project our Domain objects into JSON. 📄✨💎
     Keeps the Domain pure and follows SRP to the letter! 🏛️⚖️
     """
-    
+
     def serialize(self, transcript: AudioTranscript) -> str:
         """Converts an AudioTranscript into a high-fidelity JSON string. Projecting... 🏹🎯"""
         data = {
@@ -21,7 +22,7 @@ class JsonTranscriptSerializer:
             "start": u.timestamp.start.total_seconds(),
             "end": u.timestamp.end.total_seconds(),
             "confidence": float(u.confidence),
-            "words": [self._word_to_dict(w) for w in u.words]
+            "words": [self._word_to_dict(w) for w in u.words],
         }
 
     def _word_to_dict(self, w: Word) -> dict:
@@ -29,5 +30,5 @@ class JsonTranscriptSerializer:
             "text": w.text,
             "start": w.timestamp.start.total_seconds(),
             "end": w.timestamp.end.total_seconds(),
-            "confidence": float(w.confidence)
+            "confidence": float(w.confidence),
         }
