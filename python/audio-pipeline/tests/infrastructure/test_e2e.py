@@ -9,8 +9,10 @@ load_dotenv()
 from src.infrastructure.transcription import WhisperTranscriber
 from src.infrastructure.audio import FFmpegAudioProcessor
 from src.infrastructure.diarization import PyannoteDiarizer
+from src.infrastructure.logging import StandardLogger
 from src.application.pipeline import AudioProcessingPipeline
 from src.application.services import MaxOverlapAlignmentService
+from src.application.enrichers import SentenceSegmentationEnricher, TokenMergerEnricher
 from src.domain.entities import JobStatus
 
 RUN_E2E = os.environ.get("RUN_E2E", "false").lower() == "true"
@@ -21,6 +23,7 @@ RUN_E2E = os.environ.get("RUN_E2E", "false").lower() == "true"
 )
 def test_pipeline_end_to_end_real_components():
     # Arrange
+    logger = StandardLogger(name="E2ETest")
     audio_processor = FFmpegAudioProcessor()
     transcriber = WhisperTranscriber(
         executable_path="/home/user/Documents/GitHub/whisper.cpp/build/bin/whisper-cli",
@@ -28,11 +31,19 @@ def test_pipeline_end_to_end_real_components():
     )
     diarizer = PyannoteDiarizer()
 
+    # Use production enrichment chain 🧩✨
+    enrichers = [
+        SentenceSegmentationEnricher(max_duration_seconds=3.0, logger=logger),
+        TokenMergerEnricher(),
+    ]
+
     pipeline = AudioProcessingPipeline(
         audio_processor=audio_processor,
         transcriber=transcriber,
         diarizer=diarizer,
         alignment_service=MaxOverlapAlignmentService(),
+        enrichers=enrichers,
+        logger=logger,
     )
 
     # Act
@@ -49,6 +60,11 @@ def test_pipeline_end_to_end_real_components():
         assert job.status == JobStatus.COMPLETED
         assert job.result is not None
         assert len(job.result.utterances) > 0
+
+        # With 3s threshold, the 10s audio should have several utterances! 📈
+        assert (
+            len(job.result.utterances) >= 2
+        ), "Segmentation failed to produce granular utterances!"
 
         first_utterance = job.result.utterances[0]
         assert len(first_utterance.words) > 0, "No words found in the first utterance!"

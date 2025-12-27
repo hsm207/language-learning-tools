@@ -4,6 +4,7 @@ import pytest
 import logging
 from datetime import timedelta
 from src.application.enrichers import SentenceSegmentationEnricher
+from src.infrastructure.logging import StandardLogger
 from src.domain.value_objects import (
     Utterance,
     Word,
@@ -93,7 +94,9 @@ def test_recursive_segmentation_splits_at_punctuation(raw_utterances, caplog):
     """
     # Arrange
     THRESHOLD = 3.0
-    enricher = SentenceSegmentationEnricher(max_duration_seconds=THRESHOLD)
+    # Inject a StandardLogger so caplog works! 👂💎⚖️
+    logger = StandardLogger(name="SentenceSegmentationEnricher")
+    enricher = SentenceSegmentationEnricher(max_duration_seconds=THRESHOLD, logger=logger)
 
     # Act
     with caplog.at_level(logging.WARNING):
