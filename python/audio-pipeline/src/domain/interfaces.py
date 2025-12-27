@@ -52,6 +52,10 @@ class ILogger(ABC):
         pass
 
     @abstractmethod
+    def warning(self, message: str):
+        pass
+
+    @abstractmethod
     def error(self, message: str):
         pass
 
@@ -63,6 +67,9 @@ class NullLogger(ILogger):
         pass
 
     def debug(self, message: str):
+        pass
+
+    def warning(self, message: str):
         pass
 
     def error(self, message: str):
