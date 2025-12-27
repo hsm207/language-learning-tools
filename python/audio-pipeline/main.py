@@ -23,7 +23,15 @@ def main():
     parser.add_argument(
         "--language", default="de", help="Target language code (e.g., de, en)"
     )
-    parser.add_argument("--num-speakers", type=int, help="Expected number of speakers")
+    parser.add_argument(
+        "--num-speakers", type=int, help="Expected number of speakers"
+    )
+    parser.add_argument(
+        "--max-duration",
+        type=float,
+        default=15.0,
+        help="Max duration in seconds for sentence segmentation",
+    )
 
     args = parser.parse_args()
 
@@ -46,8 +54,10 @@ def main():
     serializer = JsonTranscriptSerializer()
 
     # 2. Setup Application
-    enrichment_chain = [
-        SentenceSegmentationEnricher(max_duration_seconds=15.0),
+    enrichers = [
+        SentenceSegmentationEnricher(
+            max_duration_seconds=args.max_duration, logger=logger.get_child("SentenceSegmenter")
+        ),
         TokenMergerEnricher(),
     ]
 
