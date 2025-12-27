@@ -3,8 +3,10 @@ import os
 from src.domain.interfaces import IAudioProcessor, ILogger, NullLogger
 from src.domain.entities import AudioArtifact
 
+
 class FFmpegAudioProcessor(IAudioProcessor):
-    def __init__(self, logger: ILogger = NullLogger()):
+    def __init__(self, work_dir: str = None, logger: ILogger = NullLogger()):
+        self.work_dir = work_dir
         self.logger = logger
 
     def normalize(self, source_path: str) -> AudioArtifact:
@@ -14,24 +16,35 @@ class FFmpegAudioProcessor(IAudioProcessor):
         if not os.path.exists(source_path):
             raise FileNotFoundError(f"Audio file not found at {source_path}! 😱")
 
-        output_path = source_path.rsplit(".", 1)[0] + "_normalized.wav"
-        
+        filename = os.path.basename(source_path).rsplit(".", 1)[0] + "_normalized.wav"
+        output_path = os.path.join(
+            self.work_dir or os.path.dirname(source_path), filename
+        )
+
+        # Ensure work_dir exists
+        if self.work_dir:
+            os.makedirs(self.work_dir, exist_ok=True)
+
         command = [
-            "ffmpeg", "-y", "-loglevel", "error", "-i", source_path,
-            "-ar", "16000",
-            "-ac", "1",
-            "-c:a", "pcm_s16le",
-            output_path
+            "ffmpeg",
+            "-y",
+            "-loglevel",
+            "error",
+            "-i",
+            source_path,
+            "-ar",
+            "16000",
+            "-ac",
+            "1",
+            "-c:a",
+            "pcm_s16le",
+            output_path,
         ]
-        
+
         self.logger.debug(f"Running FFmpeg command: {' '.join(command)}")
-        
+
         result = subprocess.run(command, capture_output=True, text=True)
         if result.returncode != 0:
             raise RuntimeError(f"FFmpeg failed! Error: {result.stderr}")
-            
-        return AudioArtifact(
-            file_path=output_path,
-            format="wav",
-            sample_rate=16000
-        )
+
+        return AudioArtifact(file_path=output_path, format="wav", sample_rate=16000)

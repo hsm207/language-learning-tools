@@ -1,54 +1,64 @@
 from src.application.pipeline import AudioProcessingPipeline
-from src.domain.entities import AudioArtifact, JobStatus
-from src.domain.interfaces import ITranscriber, IDiarizer, IAudioProcessor, ILogger
-from src.application.services import AlignmentService
+from src.application.services import MaxOverlapAlignmentService
+from src.domain.interfaces import (
+    ITranscriber,
+    IDiarizer,
+    IAudioProcessor,
+    ILogger,
+    IAlignmentService,
+)
+from src.domain.entities import ProcessingJob, AudioArtifact, JobStatus
+from src.domain.value_objects import (
+    Utterance,
+    TimestampRange,
+    ConfidenceScore,
+    LanguageTag,
+)
+
 
 def test_pipeline_execution_flow(mocker):
-    # 1. Setup Mocks using the mocker fixture! 🧪✨
-    processor = mocker.Mock(spec=IAudioProcessor)
-    transcriber = mocker.Mock(spec=ITranscriber)
-    diarizer = mocker.Mock(spec=IDiarizer)
-    alignment = mocker.Mock(spec=AlignmentService)
-    logger = mocker.Mock(spec=ILogger)
-    
-    # Configure mock behavior
-    artifact = AudioArtifact(file_path="test.wav")
-    processor.normalize.return_value = artifact
-    transcriber.transcribe.return_value = []
-    diarizer.diarize.return_value = []
-    alignment.align.return_value = []
-    
+    # Arrange
+    mock_audio_processor = mocker.Mock(spec=IAudioProcessor)
+    mock_transcriber = mocker.Mock(spec=ITranscriber)
+    mock_transcriber.transcribe.return_value = []
+    mock_diarizer = mocker.Mock(spec=IDiarizer)
+    mock_diarizer.diarize.return_value = []
+    mock_alignment_service = mocker.Mock(spec=IAlignmentService)
+    mock_alignment_service.align.return_value = []
+
     pipeline = AudioProcessingPipeline(
-        audio_processor=processor,
-        transcriber=transcriber,
-        diarizer=diarizer,
-        alignment_service=alignment,
-        logger=logger
+        audio_processor=mock_audio_processor,
+        transcriber=mock_transcriber,
+        diarizer=mock_diarizer,
+        alignment_service=mock_alignment_service,
+        logger=mocker.Mock(spec=ILogger),
     )
-    
-    # 2. Execute
+
+    # Act
     job = pipeline.execute("source.m4a", "de")
-    
-    # 3. Assert
+
+    # Assert
     assert job.status == JobStatus.COMPLETED
-    processor.normalize.assert_called_once_with("source.m4a")
-    transcriber.transcribe.assert_called_once()
-    diarizer.diarize.assert_called_once()
-    alignment.align.assert_called_once()
+    assert job.result is not None
+    mock_audio_processor.normalize.assert_called_once_with("source.m4a")
+    mock_transcriber.transcribe.assert_called_once()
+    mock_diarizer.diarize.assert_called_once()
+    mock_alignment_service.align.assert_called_once()
+
 
 def test_pipeline_failure_handles_exceptions(mocker):
     processor = mocker.Mock(spec=IAudioProcessor)
     processor.normalize.side_effect = Exception("Boom! 💥")
-    
+
     pipeline = AudioProcessingPipeline(
         audio_processor=processor,
         transcriber=mocker.Mock(),
         diarizer=mocker.Mock(),
         alignment_service=mocker.Mock(),
-        logger=mocker.Mock()
+        logger=mocker.Mock(),
     )
-    
+
     job = pipeline.execute("source.m4a", "de")
-    
+
     assert job.status == JobStatus.FAILED
     assert "Boom! 💥" in job.error_message

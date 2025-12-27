@@ -1,2 +1,7 @@
 .env
 session.md
+output/
+.playwright/
+.playwright-mcp/
+!tests/data/speaker_verification.json
+!tests/data/test_30s_raw.json

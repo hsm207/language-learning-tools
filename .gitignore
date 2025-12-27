@@ -67,3 +67,5 @@ artifacts/
 .DS_Store
 *.json
 *.ttml2
+.playwright-mcp/
+.gemini/

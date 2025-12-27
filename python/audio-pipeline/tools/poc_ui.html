@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Pipeline Explorer 🎶✨</title>
+    <style>
+        :root {
+            --primary: #ff6b6b;
+            --primary-soft: #ffb8b8;
+            --secondary: #4ecdc4;
+            --bg: #f7f9fc;
+            --text: #2d3436;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+
+        .setup-section {
+            background: #f1f2f6;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            justify-content: center;
+            align-items: flex-end;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .input-group label {
+            font-weight: bold;
+            font-size: 0.9rem;
+            color: #636e72;
+        }
+
+        input[type="file"] {
+            font-size: 0.8rem;
+        }
+
+        .transcript-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+            transition: background 0.3s;
+        }
+
+        .transcript-row:hover {
+            background-color: #f0f7f6;
+        }
+
+        .row-controls {
+            display: flex;
+            gap: 0.5rem;
+            min-width: 140px;
+        }
+
+        .control-btn {
+            background: #dfe6e9;
+            border: none;
+            padding: 0.4rem 0.8rem;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: bold;
+            transition: all 0.2s;
+            color: var(--text);
+        }
+
+        .control-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .control-btn:hover {
+            filter: brightness(0.9);
+        }
+
+        .speaker-label {
+            font-weight: bold;
+            color: var(--secondary);
+            min-width: 100px;
+            font-size: 0.85rem;
+        }
+
+        .content {
+            flex-grow: 1;
+            line-height: 1.6;
+        }
+
+        .word {
+            display: inline-block;
+            margin-right: 0.2rem;
+            padding: 0 0.2rem;
+            border-radius: 4px;
+            transition: all 0.1s;
+            color: #b2bec3;
+        }
+
+        .word.active {
+            background-color: var(--primary);
+            color: white !important;
+            transform: scale(1.15);
+            box-shadow: 0 4px 10px rgba(255, 107, 107, 0.4);
+            font-weight: bold;
+            z-index: 10;
+        }
+
+        .word.passed {
+            background-color: var(--primary-soft);
+            color: var(--text);
+            opacity: 0.8;
+        }
+
+        .word.future {
+            color: var(--text);
+        }
+
+        .status-bar {
+            text-align: center;
+            font-size: 0.8rem;
+            color: #b2bec3;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #b2bec3;
+            padding: 3rem;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Audio Pipeline Explorer 🎤✨</h1>
+        
+        <div class="setup-section">
+            <div class="input-group">
+                <label>1. Upload Pipeline Metadata (JSON) 📄</label>
+                <input type="file" id="jsonInput" accept=".json">
+            </div>
+            <div class="input-group">
+                <label>2. Upload Source Audio 🔊</label>
+                <input type="file" id="audioInput" accept="audio/*">
+            </div>
+        </div>
+
+        <div id="status" class="status-bar">Audio Context: Not Started 💤</div>
+        
+        <div id="transcript">
+            <div class="empty-state">Upload your files to start the magic! ✨</div>
+        </div>
+    </div>
+
+    <script>
+        /** 
+         * 🎧 AUDIO ENGINE 
+         * Responsible for low-level Web Audio API interactions.
+         */
+        class AudioEngine {
+            constructor() {
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                this.buffer = null;
+                this.currentSource = null;
+            }
+
+            async decode(arrayBuffer) {
+                this.buffer = await this.ctx.decodeAudioData(arrayBuffer);
+                return this.buffer;
+            }
+
+            async playRange(start, duration, onEnded) {
+                if (!this.buffer) throw new Error("Audio buffer not loaded");
+                if (this.ctx.state === 'suspended') await this.ctx.resume();
+
+                this.stop();
+
+                const source = this.ctx.createBufferSource();
+                source.buffer = this.buffer;
+                source.connect(this.ctx.destination);
+                
+                // Snappy lead time for hardware warm-up
+                const leadTime = 0.1;
+                const startTime = this.ctx.currentTime + leadTime;
+                
+                source.start(startTime, start, duration);
+                source.onended = onEnded;
+                
+                this.currentSource = source;
+                return startTime;
+            }
+
+            stop() {
+                if (this.currentSource) {
+                    this.currentSource.onended = null;
+                    try { this.currentSource.stop(); } catch(e) {}
+                    this.currentSource = null;
+                }
+            }
+
+            get currentTime() { return this.ctx.currentTime; }
+            get outputLatency() { return this.ctx.outputLatency || 0.0; }
+        }
+
+        /**
+         * 🎨 TRANSCRIPT UI
+         * Responsible for DOM manipulation and rendering.
+         */
+        class TranscriptUI {
+            constructor(containerId, statusId) {
+                this.container = document.getElementById(containerId);
+                this.status = document.getElementById(statusId);
+            }
+
+            setStatus(text) { this.status.innerText = text; }
+
+            render(data, onPlay, onLoop) {
+                this.container.innerHTML = '';
+                data.utterances.forEach((u, idx) => {
+                    const row = this._createRow(u, idx, onPlay, onLoop);
+                    this.container.appendChild(row);
+                });
+            }
+
+            updateHighlight(rowIdx, now, utterances) {
+                const row = document.getElementById(`row-${rowIdx}`);
+                if (!row) return;
+
+                const utterance = utterances[rowIdx];
+                const wordEls = row.querySelectorAll('.word');
+                
+                let focusIdx = -1;
+                utterance.words.forEach((w, i) => {
+                    if (now >= w.start && now < w.end) focusIdx = i;
+                });
+
+                wordEls.forEach((el, i) => {
+                    const wStart = parseFloat(el.dataset.start);
+                    el.classList.remove('active', 'passed', 'future');
+                    
+                    if (i === focusIdx) el.classList.add('active');
+                    else if (now >= wStart) el.classList.add('passed');
+                    else el.classList.add('future');
+                });
+            }
+
+            resetAllHighlights() {
+                document.querySelectorAll('.word').forEach(el => {
+                    el.classList.remove('active', 'passed');
+                    el.classList.add('future');
+                });
+            }
+
+            updateButtonStates(activeRowIdx, isPlaying, isLooping) {
+                document.querySelectorAll('.control-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.id.startsWith('play-')) btn.innerText = '▶ Play';
+                });
+
+                if (activeRowIdx !== -1) {
+                    const playBtn = document.getElementById(`play-${activeRowIdx}`);
+                    const loopBtn = document.getElementById(`loop-${activeRowIdx}`);
+                    if (isPlaying) {
+                        playBtn.innerText = '⏹ Stop';
+                        playBtn.classList.add('active');
+                    }
+                    if (isLooping) loopBtn.classList.add('active');
+                }
+            }
+
+            _createRow(u, idx, onPlay, onLoop) {
+                const row = document.createElement('div');
+                row.className = 'transcript-row';
+                row.id = `row-${idx}`;
+
+                row.innerHTML = `
+                    <div class="row-controls">
+                        <button class="control-btn" id="play-${idx}">▶ Play</button>
+                        <button class="control-btn" id="loop-${idx}">🔄 Loop</button>
+                    </div>
+                    <div class="speaker-label">
+                        ${u.speaker_id}<br>
+                        <small style="color:#b2bec3">${u.start.toFixed(2)} - ${u.end.toFixed(2)}s</small>
+                    </div>
+                    <div class="content">
+                        ${u.words.map((w, wi) => `
+                            <span class="word future" id="w-${idx}-${wi}" 
+                                  data-start="${w.start}" data-end="${w.end}">${w.text}</span>
+                        `).join(' ')}
+                    </div>
+                `;
+
+                row.querySelector(`#play-${idx}`).onclick = () => onPlay(idx);
+                row.querySelector(`#loop-${idx}`).onclick = () => onLoop(idx);
+                return row;
+            }
+        }
+
+        /**
+         * 🎮 APPLICATION CONTROLLER
+         * Orchestrates the show.
+         */
+        class App {
+            constructor() {
+                this.audio = new AudioEngine();
+                this.ui = new TranscriptUI('transcript', 'status');
+                
+                this.transcriptData = null;
+                this.activeRowIdx = -1;
+                this.isLooping = false;
+                this.playbackStartTime = 0;
+                this.playbackOffset = 0;
+
+                this._setupInputs();
+                this._startSyncLoop();
+            }
+
+            _setupInputs() {
+                document.getElementById('jsonInput').onchange = async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const text = await file.text();
+                    this.transcriptData = JSON.parse(text);
+                    window.transcriptData = this.transcriptData; // For audit
+                    this.ui.render(this.transcriptData, 
+                        (i) => this.togglePlayback(i), 
+                        (i) => this.toggleLoop(i)
+                    );
+                };
+
+                document.getElementById('audioInput').onchange = async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    this.ui.setStatus("⏳ Decoding Audio... 🧩");
+                    const buffer = await this.audio.decode(await file.arrayBuffer());
+                    this.ui.setStatus(`✅ Audio Ready! (${buffer.duration.toFixed(2)}s)`);
+                };
+            }
+
+            async playRow(idx, loop = false) {
+                const u = this.transcriptData.utterances[idx];
+                this.activeRowIdx = idx;
+                this.isLooping = loop;
+                this.playbackOffset = u.start;
+
+                this.playbackStartTime = await this.audio.playRange(u.start, u.end - u.start, () => {
+                    if (this.isLooping && this.activeRowIdx !== -1) {
+                        this.playRow(this.activeRowIdx, true);
+                    } else {
+                        this.audio.stop();
+                        this.ui.updateButtonStates(this.activeRowIdx, false, this.isLooping);
+                        // Enter Visual Post-Roll Snap
+                        setTimeout(() => {
+                            if (!this.audio.currentSource) {
+                                this.activeRowIdx = -1;
+                                this.playbackStartTime = 0;
+                                this.ui.updateButtonStates(-1, false, false);
+                            }
+                        }, 800);
+                    }
+                });
+
+                this.ui.updateButtonStates(this.activeRowIdx, true, this.isLooping);
+            }
+
+            togglePlayback(idx) {
+                if (this.activeRowIdx === idx && this.audio.currentSource) {
+                    this.audio.stop();
+                    this.activeRowIdx = -1;
+                    this.isLooping = false;
+                } else {
+                    this.playRow(idx, false);
+                }
+                this.ui.updateButtonStates(this.activeRowIdx, !!this.audio.currentSource, this.isLooping);
+            }
+
+            toggleLoop(idx) {
+                if (this.activeRowIdx === idx && this.isLooping) {
+                    this.isLooping = false;
+                } else {
+                    this.playRow(idx, true);
+                }
+                this.ui.updateButtonStates(this.activeRowIdx, !!this.audio.currentSource, this.isLooping);
+            }
+
+            _startSyncLoop() {
+                const loop = () => {
+                    if (this.activeRowIdx !== -1 && this.transcriptData) {
+                        let now;
+                        const utterance = this.transcriptData.utterances[this.activeRowIdx];
+                        const latency = this.audio.outputLatency;
+
+                        if (this.audio.currentSource || (this.playbackStartTime > 0 && this.audio.currentTime < this.playbackStartTime)) {
+                            const elapsed = this.audio.currentTime - this.playbackStartTime;
+                            now = this.playbackOffset + elapsed - latency;
+                        } else if (this.playbackStartTime > 0) {
+                            now = utterance.end;
+                        } else {
+                            now = utterance.start - 1;
+                        }
+
+                        this.ui.updateHighlight(this.activeRowIdx, now, this.transcriptData.utterances);
+                    } else {
+                        this.ui.resetAllHighlights();
+                    }
+                    requestAnimationFrame(loop);
+                };
+                requestAnimationFrame(loop);
+            }
+        }
+
+        new App();
+    </script>
+</body>
+</html>
