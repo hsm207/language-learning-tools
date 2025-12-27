@@ -49,3 +49,25 @@ class LocalLogger(ILogger):
 
     def error(self, message: str):
         self.logger.error(message)
+
+
+class StandardLogger(ILogger):
+    """
+    A simple wrapper around the standard Python logging library.
+    Useful for tests where we want caplog to work! 🧪💎
+    """
+
+    def __init__(self, name: str = "StandardLogger"):
+        self.logger = logging.getLogger(name)
+
+    def info(self, message: str):
+        self.logger.info(message)
+
+    def debug(self, message: str):
+        self.logger.debug(message)
+
+    def warning(self, message: str):
+        self.logger.warning(message)
+
+    def error(self, message: str):
+        self.logger.error(message)
