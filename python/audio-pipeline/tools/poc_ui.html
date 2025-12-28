@@ -116,6 +116,21 @@
         .content {
             flex-grow: 1;
             line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+
+        .original-text {
+            font-size: 1.1rem;
+        }
+
+        .translation {
+            font-size: 0.9rem;
+            color: #636e72;
+            font-style: italic;
+            border-top: 1px dashed #dfe6e9;
+            padding-top: 0.2rem;
         }
 
         .word {
@@ -247,6 +262,9 @@
 
             render(data, onPlay, onLoop) {
                 this.container.innerHTML = '';
+                if (data.target_language) {
+                    this.setStatus(`🌍 SOTA Translation Active: ${data.target_language.toUpperCase()} 🥨🗽`);
+                }
                 data.utterances.forEach((u, idx) => {
                     const row = this._createRow(u, idx, onPlay, onLoop);
                     this.container.appendChild(row);
@@ -304,6 +322,15 @@
                 row.className = 'transcript-row';
                 row.id = `row-${idx}`;
 
+                const translationHtml = u.translated_text 
+                    ? `<div class="translation">${u.translated_text}</div>` 
+                    : '';
+
+                // SOTA Fallback: If words are missing, show the raw text! 🛡️💎
+                const originalHtml = (u.words && u.words.length > 0)
+                    ? u.words.map((w, wi) => `<span class="word future" id="w-${idx}-${wi}" data-start="${w.start}" data-end="${w.end}">${w.text}</span>`).join(' ')
+                    : `<span class="original-raw">${u.text}</span>`;
+
                 row.innerHTML = `
                     <div class="row-controls">
                         <button class="control-btn" id="play-${idx}">▶ Play</button>
@@ -314,7 +341,10 @@
                         <small style="color:#b2bec3">${u.start.toFixed(2)} - ${u.end.toFixed(2)}s</small>
                     </div>
                     <div class="content">
-                        ${u.words.map((w, wi) => `<span class="word future" id="w-${idx}-${wi}" data-start="${w.start}" data-end="${w.end}">${w.text}</span>`).join(' ')}
+                        <div class="original-text">
+                            ${originalHtml}
+                        </div>
+                        ${translationHtml}
                     </div>
                 `;
 
