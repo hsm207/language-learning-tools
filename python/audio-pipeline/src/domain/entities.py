@@ -35,9 +35,22 @@ class ProcessingJob:
     def mark_ingested(self):
         self.status = JobStatus.INGESTED
 
+    def mark_transcribing(self):
+        self.status = JobStatus.TRANSCRIBING
+
+    def mark_diarizing(self):
+        self.status = JobStatus.DIARIZING
+
+    def mark_enriching(self):
+        self.status = JobStatus.ENRICHING
+
     def complete(self, transcript: AudioTranscript):
         self.result = transcript
         self.status = JobStatus.COMPLETED
+
+    def fail(self, error_message: str):
+        self.status = JobStatus.FAILED
+        self.error_message = error_message
 
     @property
     def utterances(self) -> List[Utterance]:

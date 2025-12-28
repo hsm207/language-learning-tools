@@ -46,19 +46,19 @@ class AudioProcessingPipeline:
         try:
             with self._timed_step("📦 Ingestion & Normalization"):
                 self.logger.info(f"Processing {source_path}...")
-                job.status = JobStatus.INGESTED
+                job.mark_ingested()
                 artifact = self.audio_processor.normalize(source_path)
                 self.logger.debug(f"Normalized artifact: {artifact.file_path}")
 
             with self._timed_step(f"🎤 Transcription ({language})"):
-                job.status = JobStatus.TRANSCRIBING
+                job.mark_transcribing()
                 raw_utterances = (
                     self.transcriber.transcribe(artifact, job.target_language) or []
                 )
                 self.logger.debug(f"Found {len(raw_utterances)} segments.")
 
             with self._timed_step("🕵️‍♀️ Diarization"):
-                job.status = JobStatus.DIARIZING
+                job.mark_diarizing()
                 diarized_segments = (
                     self.diarizer.diarize(artifact, options=diarization_options) or []
                 )
@@ -70,7 +70,7 @@ class AudioProcessingPipeline:
                 )
 
             if self.enrichers:
-                job.status = JobStatus.ENRICHING
+                job.mark_enriching()
                 for i, enricher in enumerate(self.enrichers):
                     enricher_name = (
                         enricher.__class__.__name__
@@ -92,8 +92,7 @@ class AudioProcessingPipeline:
 
         except Exception as e:
             self.logger.error(f"❌ Pipeline failed for {job.id}: {str(e)}")
-            job.status = JobStatus.FAILED
-            job.error_message = str(e)
+            job.fail(str(e))
 
         return job
 
