@@ -44,8 +44,11 @@ class FFmpegAudioProcessor(IAudioProcessor):
 
         self.logger.debug(f"Running FFmpeg command: {' '.join(command)}")
 
-        result = subprocess.run(command, capture_output=True, text=True)
-        if result.returncode != 0:
-            raise RuntimeError(f"FFmpeg failed! Error: {result.stderr}")
+        try:
+            result = subprocess.run(command, capture_output=True, text=True)
+            if result.returncode != 0:
+                raise RuntimeError(f"FFmpeg failed! Error: {result.stderr}")
+        except FileNotFoundError:
+            raise RuntimeError(f"FFmpeg binary not found! Please install ffmpeg. 🚫🔨")
 
         return AudioArtifact(file_path=output_path, format="wav", sample_rate=16000)

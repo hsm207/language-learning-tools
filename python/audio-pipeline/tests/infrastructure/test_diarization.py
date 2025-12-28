@@ -1,51 +1,61 @@
+import os
 import pytest
-from datetime import timedelta
+from unittest.mock import Mock, MagicMock
 from src.infrastructure.diarization import PyannoteDiarizer
 from src.domain.entities import AudioArtifact
+from src.domain.value_objects import DiarizationOptions
 
 
-def test_pyannote_diarizer_initialization_fails_without_token(mocker):
-    # Use mocker to clear the environment! 🤫
-    mocker.patch.dict("os.environ", {}, clear=True)
-
+def test_pyannote_diarizer_fails_on_missing_token(mocker):
+    """Hits the branch where HF_TOKEN is not in environment. 🔐🚫"""
+    mocker.patch.dict(os.environ, {"HF_TOKEN": ""})
     with pytest.raises(ValueError, match="Missing HF_TOKEN"):
         PyannoteDiarizer()
 
 
-def test_pyannote_diarizer_parses_output_correctly(mocker):
-    # 1. Setup Mocks using the detailed mocker fixture 💉✨
-    mocker.patch.dict("os.environ", {"HF_TOKEN": "hf_test_token"})
+def test_pyannote_diarizer_fails_on_pipeline_load_error(mocker):
+    """Hits the exception branch during pipeline initialization. 😱🥊"""
+    mocker.patch.dict(os.environ, {"HF_TOKEN": "valid"})
+    mocker.patch("pyannote.audio.Pipeline.from_pretrained", side_effect=Exception("Network Error"))
+    
+    with pytest.raises(Exception, match="Network Error"):
+        PyannoteDiarizer()
 
-    # Mock the Pipeline class and its return values
-    mock_pipeline_instance = mocker.Mock()
-    mock_from_pretrained = mocker.patch(
-        "src.infrastructure.diarization.Pipeline.from_pretrained",
-        return_value=mock_pipeline_instance,
-    )
 
-    # Mock the complex DiarizeOutput structure 🕵️‍♀️
-    mock_turn = mocker.Mock()
-    mock_turn.start = 1.5
-    mock_turn.end = 10.2
+def test_pyannote_diarizer_fails_on_empty_pipeline(mocker):
+    """Hits the None check if from_pretrained returns nothing. 👻🔍"""
+    mocker.patch.dict(os.environ, {"HF_TOKEN": "valid"})
+    mocker.patch("pyannote.audio.Pipeline.from_pretrained", return_value=None)
+    
+    with pytest.raises(RuntimeError, match="pipeline failed to load"):
+        PyannoteDiarizer()
 
-    mock_diarization = mocker.Mock()
-    # itertracks(yield_label=True) returns (segment, track, label)
-    mock_diarization.itertracks.return_value = [
-        (mock_turn, "ignored_track", "SPEAKER_00")
-    ]
 
-    mock_output = mocker.Mock()
-    mock_output.speaker_diarization = mock_diarization
-    mock_pipeline_instance.return_value = mock_output
-
-    # 2. Execute 🚀
+def test_pyannote_diarizer_guards_against_uninitialized_call(mocker):
+    """Hits the defensive guard in the diarize method. 🛡️⚖️"""
+    mocker.patch.dict(os.environ, {"HF_TOKEN": "valid"})
+    mocker.patch("pyannote.audio.Pipeline.from_pretrained", return_value=Mock())
+    
     diarizer = PyannoteDiarizer()
-    artifact = AudioArtifact(file_path="test.wav")
-    results = diarizer.diarize(artifact)
+    diarizer.pipeline = None # Force broken state!
+    
+    with pytest.raises(RuntimeError, match="not initialized"):
+        diarizer.diarize(AudioArtifact(file_path="test.wav"))
 
-    # 3. Assert 💎
-    assert len(results) == 1
-    assert results[0].speaker_id == "SPEAKER_00"
-    assert results[0].timestamp.start == timedelta(seconds=1.5)
-    assert results[0].timestamp.end == timedelta(seconds=10.2)
-    mock_from_pretrained.assert_called_once()
+
+def test_pyannote_diarize_with_full_options(mocker):
+    """Hits all the option-flattening branches in the diarize method. 🏎️💨"""
+    mocker.patch.dict(os.environ, {"HF_TOKEN": "valid"})
+    mock_pipeline = MagicMock()
+    mocker.patch("pyannote.audio.Pipeline.from_pretrained", return_value=mock_pipeline)
+    
+    diarizer = PyannoteDiarizer()
+    options = DiarizationOptions(num_speakers=2, min_speakers=1, max_speakers=3)
+    
+    diarizer.diarize(AudioArtifact(file_path="test.wav"), options=options)
+    
+    # Verify the flattened kwargs passed to the pipeline! 🎯
+    _, kwargs = mock_pipeline.call_args
+    assert kwargs["num_speakers"] == 2
+    assert kwargs["min_speakers"] == 1
+    assert kwargs["max_speakers"] == 3

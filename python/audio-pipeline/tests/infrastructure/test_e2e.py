@@ -29,8 +29,9 @@ RUN_E2E = os.environ.get("RUN_E2E", "false").lower() == "true"
 @pytest.mark.skipif(
     not RUN_E2E, reason="Skipping slow SOTA E2E test. Set RUN_E2E=true to run!"
 )
-def test_pipeline_end_to_end_real_components():
+def test_pipeline_end_to_end_real_components(caplog):
     # Arrange
+    caplog.set_level("INFO")
     logger = StandardLogger(name="E2ETest")
     
     # ⚡️ Reactive Event Bus Setup
@@ -107,3 +108,7 @@ def test_pipeline_end_to_end_real_components():
         # Verify Translation! 🇩🇪 -> 🇺🇸
         assert first_utterance.translated_text is not None, "Translation missing!"
         assert len(first_utterance.translated_text) > 0, "Translation is empty!"
+
+        # Verify Timing Logs in Console! ⏱️📈✅
+        assert "Finished 🎤 Transcription (de) in" in caplog.text
+        assert "Total processing time:" in caplog.text
