@@ -1,6 +1,7 @@
 .env
 session.md
 output/
+models/*.gguf
 .playwright/
 .playwright-mcp/
 !tests/data/speaker_verification.json
