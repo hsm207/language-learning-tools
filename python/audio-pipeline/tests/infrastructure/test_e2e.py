@@ -27,7 +27,7 @@ RUN_E2E = os.environ.get("RUN_E2E", "false").lower() == "true"
 
 
 @pytest.mark.skipif(
-    not RUN_E2E, reason="Skipping slow SOTA E2E test. Set RUN_E2E=true to run!"
+    not RUN_E2E, reason="Skipping slow E2E test. Set RUN_E2E=true to run!"
 )
 def test_pipeline_end_to_end_real_components(caplog):
     # Arrange

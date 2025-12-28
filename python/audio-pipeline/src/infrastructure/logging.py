@@ -6,7 +6,7 @@ from src.domain.interfaces import ILogger
 
 class StandardLogger(ILogger):
     """
-    Python standard library implementation of our SOTA Logger. 🛡️⚖️🏛️
+    Python standard library implementation of our Logger. 🛡️⚖️🏛️
     """
 
     def __init__(

@@ -4,7 +4,7 @@ import subprocess
 from src.infrastructure.llama_cpp_translation import LlamaCppTranslator
 from src.domain.value_objects import LanguageTag
 
-# Path Configuration for SOTA Environment 🗺️
+# Path Configuration for Environment 🗺️
 MODEL_PATH = "models/llama-3.1-8b-instruct-q4_k_m.gguf"
 EXE_PATH = "/home/user/Documents/GitHub/llama.cpp/build/bin/llama-cli"
 GRAMMAR_PATH = "src/infrastructure/grammars/translation.gbnf"
@@ -25,7 +25,7 @@ def is_llama_available():
 )
 def test_llama_cpp_translator_integration_real_model():
     """
-    SOTA Integration Test: Verifies that the LlamaCppTranslator actually
+    Integration Test: Verifies that the LlamaCppTranslator actually
     banishes the 'Hats' hallucination using the real 8B model! 🦖💎⚖️
     """
     # Arrange
@@ -61,14 +61,14 @@ def test_llama_cpp_translator_integration_real_model():
 
 def test_llama_cpp_translator_parsing_logic_mocked(mocker):
     """
-    SOTA Behavioral Test: Verifies that the driver can extract the JSON block
+    Behavioral Test: Verifies that the driver can extract the JSON block
     even when llama-cli outputs performance metrics and trailing tokens. 🧼💎⚖️
     """
     # Arrange
     mocker.patch("os.path.exists", return_value=True)
     translator = LlamaCppTranslator("fake_model", "fake_exe", "fake_grammar")
 
-    mock_raw_output = """
+    mock_raw_output = b"""
 Loading model... done.
 {
   "translation": "Correctly Extracted Text"

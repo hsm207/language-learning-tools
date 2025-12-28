@@ -88,8 +88,9 @@ class LlamaCppTranslator(ITranslator):
         ]
 
         self.logger.debug(f"🚀 Spawning Llama-CLI for inference...")
-        process = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        return process.stdout.strip()
+        # Capture as bytes to avoid UTF-8 decoding crashes on weird LLM artifacts! 🧼🛡️
+        process = subprocess.run(cmd, capture_output=True, text=False, check=True)
+        return process.stdout.decode("utf-8", errors="replace").strip()
 
     def _extract_field(self, raw_output: str, field_name: str) -> str:
         """Surgically extracts a field from the first JSON block found in output. ✂️💎"""

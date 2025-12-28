@@ -1,7 +1,7 @@
 [project]
 name = "audio-pipeline"
 version = "0.1.0"
-description = "SOTA Audio Processing Pipeline with Local and Azure implementations. 🏎️💨🚀✨"
+description = "Audio Processing Pipeline with Local and Azure implementations. 🏎️💨🚀✨"
 readme = "README.md"
 authors = [
     { name = "hsm207", email = "hsm207@users.noreply.github.com" }
@@ -16,6 +16,7 @@ dependencies = [
     "azure-mgmt-cognitiveservices>=13.5.0",
     "azure-ai-transcription>=1.0.0b2",
     "python-dotenv>=1.0.1",
+    "httpx>=0.28.1",
 ]
 
 [tool.uv]

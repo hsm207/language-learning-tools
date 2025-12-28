@@ -12,7 +12,7 @@ class FileSystemResultRepository(IResultRepository):
         self.serializer = serializer
 
     def save(self, transcript: AudioTranscript, output_path: str):
-        """Saves the SOTA transcript to the specified local path. 💾💎"""
+        """Saves the transcript to the specified local path. 💾💎"""
         content = self.serializer.serialize(transcript)
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(content)

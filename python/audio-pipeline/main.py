@@ -1,33 +1,29 @@
 import os
 import argparse
 from dotenv import load_dotenv
-from src.infrastructure.transcription import WhisperTranscriber
-from src.infrastructure.audio import FFmpegAudioProcessor
-from src.infrastructure.diarization import PyannoteDiarizer
 from src.infrastructure.logging import StandardLogger
 from src.infrastructure.serialization import JsonTranscriptSerializer
 from src.infrastructure.repositories import FileSystemResultRepository
 from src.application.pipeline import AudioProcessingPipeline
-from src.application.services import MaxOverlapAlignmentService
-from src.application.enrichers.segmentation import SentenceSegmentationEnricher
-from src.application.enrichers.merging import TokenMergerEnricher
-from src.application.enrichers.translation import TranslationEnricher
-from src.infrastructure.llama_cpp_translation import LlamaCppTranslator
 from src.infrastructure.bus import InProcessEventBus
 from src.infrastructure.event_handlers import LoggingEventHandler
-from src.domain.value_objects import DiarizationOptions, LanguageTag
+from src.infrastructure.factory import PipelineComponentFactory
+from src.domain.entities import JobStatus
+from src.domain.value_objects import LanguageTag
 
 
 def main():
     load_dotenv()
 
-    parser = argparse.ArgumentParser(description="SOTA Audio Pipeline CLI 🎙️✨")
+    parser = argparse.ArgumentParser(description="Audio Pipeline CLI 🎙️✨")
     parser.add_argument("input", help="Path to the source audio file")
     parser.add_argument(
         "--output-dir", default="./output", help="Directory for results and temp files"
     )
     parser.add_argument(
-        "--language", default="de", help="Target language code (e.g., de, en)"
+        "--language",
+        default="de-DE",
+        help="Target language code (BCP-47 for Azure, e.g., de-DE)",
     )
     parser.add_argument(
         "--target-language", default="en", help="Language to translate into"
@@ -51,6 +47,11 @@ def main():
         default=1,
         help="Number of utterances to translate in a single block (currently 1 for best accuracy)",
     )
+    parser.add_argument(
+        "--use-azure",
+        action="store_true",
+        help="Use Azure Fast Transcription instead of local Whisper/Pyannote. ☁️🏎️💨",
+    )
 
     args = parser.parse_args()
 
@@ -59,7 +60,7 @@ def main():
     temp_dir = os.path.join(args.output_dir, "temp")
     os.makedirs(temp_dir, exist_ok=True)
 
-    # 🏛️ Composition Root: Initializing Infrastructure & Application Layers
+    # 🏛️ Composition Root Factory Setup
     log_file_path = os.path.join(args.output_dir, "pipeline.log")
     logger = StandardLogger(name="Pipeline", log_file=log_file_path)
 
@@ -67,57 +68,41 @@ def main():
     event_bus = InProcessEventBus()
     LoggingEventHandler(logger=logger, bus=event_bus)
 
-    audio_processor = FFmpegAudioProcessor()
-    transcriber = WhisperTranscriber(
-        executable_path="/home/user/Documents/GitHub/whisper.cpp/build/bin/whisper-cli",
-        model_path="/home/user/Documents/GitHub/whisper.cpp/models/ggml-large-v3.bin",
-    )
-    diarizer = PyannoteDiarizer()
-    translator = LlamaCppTranslator(
-        model_path="models/llama-3.1-8b-instruct-q4_k_m.gguf",
-        executable_path="/home/user/Documents/GitHub/llama.cpp/build/bin/llama-cli",
-        grammar_path="src/infrastructure/grammars/translation.gbnf",
-        logger=logger,
-    )
+    # 🏗️ Build Components using Factory
+    factory = PipelineComponentFactory(args, logger)
+    (
+        audio_processor,
+        transcriber,
+        diarizer,
+        alignment_service,
+        enrichers,
+    ) = factory.build_components()
 
     serializer = JsonTranscriptSerializer()
     result_repo = FileSystemResultRepository(serializer=serializer)
-
-    enrichers = [
-        SentenceSegmentationEnricher(
-            max_duration_seconds=args.max_duration, logger=logger
-        ),
-        TokenMergerEnricher(),
-        TranslationEnricher(
-            translator=translator,
-            target_lang=LanguageTag(args.target_language),
-            context_size=args.translation_context,
-            batch_size=args.translation_batch,
-            logger=logger,
-        ),
-    ]
 
     pipeline = AudioProcessingPipeline(
         audio_processor=audio_processor,
         transcriber=transcriber,
         diarizer=diarizer,
-        alignment_service=MaxOverlapAlignmentService(),
+        alignment_service=alignment_service,
         event_bus=event_bus,
-        enrichers=enrichers,
         logger=logger,
+        enrichers=enrichers,
     )
 
     # 3. Execute
-    logger.info(f"🚀 Starting SOTA Audio Pipeline for {args.input}...")
-    options = DiarizationOptions(num_speakers=args.num_speakers)
-    job = pipeline.execute(args.input, args.language, diarization_options=options)
+    job = pipeline.execute(
+        source_path=args.input,
+        language=args.language,
+    )
 
-    if job.error_message:
+    if job.status == JobStatus.FAILED:
         logger.error(f"❌ Job failed! {job.error_message}")
     else:
-        output_json_path = os.path.join(args.output_dir, "transcript.json")
-        result_repo.save(job.result, output_json_path)
-        logger.info(f"💾 Results saved to {output_json_path}! 💎")
+        output_path = os.path.join(args.output_dir, "transcript.json")
+        result_repo.save(job.result, output_path)
+        logger.info(f"💾 Results saved to {output_path}! 💎")
 
 
 if __name__ == "__main__":
