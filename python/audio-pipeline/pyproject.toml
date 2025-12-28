@@ -1,0 +1,42 @@
+[project]
+name = "audio-pipeline"
+version = "0.1.0"
+description = "SOTA Audio Processing Pipeline with Local and Azure implementations. 🏎️💨🚀✨"
+readme = "README.md"
+authors = [
+    { name = "hsm207", email = "hsm207@users.noreply.github.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "torch==2.8.0+cpu",
+    "torchaudio==2.8.0+cpu",
+    "pyannote.audio>=4.0.3",
+    "azure-identity>=1.25.1",
+    "azure-mgmt-resource>=23.1.1",
+    "azure-mgmt-cognitiveservices>=13.5.0",
+    "azure-ai-transcription>=1.0.0b2",
+    "python-dotenv>=1.0.1",
+]
+
+[tool.uv]
+managed = true
+package = false
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+torchaudio = { index = "pytorch-cpu" }
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "pytest-asyncio>=0.24.0",
+    "black>=24.8.0",
+    "ruff>=0.6.1",
+    "pytest-cov>=7.0.0",
+    "pytest-mock>=3.15.1",
+]
