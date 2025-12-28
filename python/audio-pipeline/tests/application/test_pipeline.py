@@ -1,3 +1,4 @@
+import pytest
 from unittest.mock import Mock
 from src.application.pipeline import AudioProcessingPipeline
 from src.domain.interfaces import (
@@ -68,3 +69,19 @@ def test_pipeline_failure_handles_exceptions(mocker):
     assert job.status == JobStatus.FAILED
     assert "Boom! 💥" in job.error_message
     assert mock_event_bus.publish.called
+
+
+def test_pipeline_fails_on_missing_language(mocker):
+    """Verifies that the pipeline enforces the mandatory language parameter. 🛡️⚖️"""
+    pipeline = AudioProcessingPipeline(
+        audio_processor=mocker.Mock(),
+        transcriber=mocker.Mock(),
+        diarizer=mocker.Mock(),
+        alignment_service=mocker.Mock(),
+        event_bus=mocker.Mock(),
+    )
+    
+    mocker.patch("os.path.exists", return_value=True)
+    
+    with pytest.raises(ValueError, match="Target language must be provided"):
+        pipeline.execute("source.wav", "")

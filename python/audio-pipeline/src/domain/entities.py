@@ -89,9 +89,3 @@ class ProcessingJob:
         events = self._events[:]
         self._events.clear()
         return events
-
-    @property
-    def utterances(self) -> List[Utterance]:
-        if not self.result:
-            return []
-        return self.result.utterances

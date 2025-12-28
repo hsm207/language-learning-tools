@@ -45,6 +45,9 @@ class AudioProcessingPipeline:
         if not os.path.exists(source_path):
             raise FileNotFoundError(f"Source audio file not found: {source_path}")
 
+        if not language:
+            raise ValueError("Target language must be provided!")
+
         job = ProcessingJob(
             source_path=source_path, target_language=LanguageTag(language)
         )
