@@ -28,9 +28,6 @@ class TranslationEnricher(IAudioEnricher):
     def enrich(
         self, utterances: List[Utterance], language: LanguageTag
     ) -> List[Utterance]:
-        if not utterances:
-            return []
-
         self.logger.info(
             f"🌍 Translating {len(utterances)} utterances to {self.target_lang} (context_size={self.context_size})..."
         )

@@ -29,9 +29,6 @@ class SentenceSegmentationEnricher(IAudioEnricher):
     def enrich(
         self, utterances: List[Utterance], language: LanguageTag
     ) -> List[Utterance]:
-        if not utterances:
-            return []
-
         final_utterances = []
         for u in utterances:
             # Recursively split long utterances! 🔄✂️
