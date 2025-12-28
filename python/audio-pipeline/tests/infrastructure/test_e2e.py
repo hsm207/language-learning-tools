@@ -11,6 +11,10 @@ from src.infrastructure.audio import FFmpegAudioProcessor
 from src.infrastructure.diarization import PyannoteDiarizer
 from src.infrastructure.llama_cpp_translation import LlamaCppTranslator
 from src.infrastructure.logging import StandardLogger
+from src.infrastructure.bus import InProcessEventBus
+from src.infrastructure.event_handlers import LoggingEventHandler
+from src.infrastructure.serialization import JsonTranscriptSerializer
+from src.infrastructure.repositories import FileSystemResultRepository
 from src.application.pipeline import AudioProcessingPipeline
 from src.application.services import MaxOverlapAlignmentService
 from src.application.enrichers.segmentation import SentenceSegmentationEnricher
@@ -28,6 +32,11 @@ RUN_E2E = os.environ.get("RUN_E2E", "false").lower() == "true"
 def test_pipeline_end_to_end_real_components():
     # Arrange
     logger = StandardLogger(name="E2ETest")
+    
+    # ⚡️ Reactive Event Bus Setup
+    event_bus = InProcessEventBus()
+    LoggingEventHandler(logger=logger, bus=event_bus)
+
     audio_processor = FFmpegAudioProcessor()
     transcriber = WhisperTranscriber(
         executable_path="/home/user/Documents/GitHub/whisper.cpp/build/bin/whisper-cli",
@@ -58,6 +67,7 @@ def test_pipeline_end_to_end_real_components():
         transcriber=transcriber,
         diarizer=diarizer,
         alignment_service=MaxOverlapAlignmentService(),
+        event_bus=event_bus,
         enrichers=enrichers,
         logger=logger,
     )
@@ -72,10 +82,16 @@ def test_pipeline_end_to_end_real_components():
 
         job = pipeline.execute(temp_source, "de")
 
+        repo = FileSystemResultRepository(serializer=JsonTranscriptSerializer())
+        output_path = os.path.join(tmp_dir, "transcript.json")
+        repo.save(job.result, output_path)
+
         # Assert
         assert job.status == JobStatus.COMPLETED
         assert job.result is not None
         assert len(job.result.utterances) > 0
+        assert os.path.exists(output_path), "Repository failed to save the result!"
+
 
         # With 3s threshold, the 10s audio should have several utterances! 📈
         assert (

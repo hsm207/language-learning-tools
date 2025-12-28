@@ -43,14 +43,14 @@ def test_json_transcript_serializer_projects_all_sota_fields():
     data = json.loads(json_output)
 
     # Assert: Verification of the Public API Contract! 🏛️⚖️
-    # If any of these fail, we have a SOTA regression! 📉🥊
+    # If any of these fail, we have a regression! 📉🥊
     assert (
         data["target_language"] == "en"
     ), "Root 'target_language' missing from API contract!"
     assert len(data["utterances"]) == 1
 
     u_data = data["utterances"][0]
-    assert u_data["speaker_id"] == "SPEAKER_01"
+    assert u_data["speaker"] == "SPEAKER_01"
     assert u_data["text"] == "Hallo"
     assert (
         u_data["translated_text"] == "Hello"

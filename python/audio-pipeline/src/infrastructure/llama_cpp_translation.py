@@ -3,7 +3,8 @@ import subprocess
 import os
 import dataclasses
 from typing import List, Optional
-from src.domain.interfaces import ITranslator, ILogger, NullLogger
+from src.domain.interfaces import ITranslator, ILogger
+from src.infrastructure.logging import NullLogger
 from src.domain.value_objects import LanguageTag
 
 

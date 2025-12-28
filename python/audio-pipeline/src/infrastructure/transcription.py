@@ -3,7 +3,8 @@ import os
 import json
 from typing import List
 from datetime import timedelta
-from src.domain.interfaces import ITranscriber, ILogger, NullLogger
+from src.domain.interfaces import ITranscriber, ILogger
+from src.infrastructure.logging import NullLogger
 from src.domain.entities import AudioArtifact
 from src.domain.value_objects import (
     Utterance,

@@ -1,6 +1,7 @@
 import subprocess
 import os
-from src.domain.interfaces import IAudioProcessor, ILogger, NullLogger
+from src.domain.interfaces import IAudioProcessor, ILogger
+from src.infrastructure.logging import NullLogger
 from src.domain.entities import AudioArtifact
 
 

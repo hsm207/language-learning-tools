@@ -3,7 +3,8 @@ import torch
 from typing import List
 from datetime import timedelta
 from pyannote.audio import Pipeline
-from src.domain.interfaces import IDiarizer, ILogger, NullLogger
+from src.domain.interfaces import IDiarizer, ILogger
+from src.infrastructure.logging import NullLogger
 from src.domain.entities import AudioArtifact
 from src.domain.value_objects import (
     Utterance,
