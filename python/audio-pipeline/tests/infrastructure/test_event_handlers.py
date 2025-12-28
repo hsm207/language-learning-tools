@@ -1,23 +1,37 @@
 import pytest
+from uuid import uuid4
 from src.infrastructure.event_handlers import LoggingEventHandler
+from src.domain.events import PipelineStepTimed
 
 
-def test_logging_handler_duration_formatting_all_branches(mocker):
+def test_logging_handler_duration_formatting_via_public_api(mocker):
     """
-    Behavioral Test: Hits all duration formatting branches (ms, s, m, h)
-    to ensure 100% logic coverage in the event handler! ⏱️📉✅
+    Contract Test: Verifies that the handler formats durations correctly
+    in its log messages by handling real events. ⏱️📈✅
     """
     # Arrange
-    handler = LoggingEventHandler(mocker.Mock(), mocker.Mock())
+    mock_logger = mocker.Mock()
+    handler = LoggingEventHandler(mock_logger, mocker.Mock())
+    job_id = uuid4()
     
-    # 1. Microseconds/Milliseconds only
-    assert handler._format_duration(0.5) == "500ms"
+    # We test all duration branches via the public 'handle_step_timed' API! 🏙️💎
     
-    # 2. Seconds only
-    assert handler._format_duration(1.5) == "1.500s"
+    # 1. Milliseconds
+    e1 = PipelineStepTimed(job_id=job_id, step_name="Step1", duration_seconds=0.5)
+    handler.handle_step_timed(e1)
+    assert "Finished Step1 in 500ms" in mock_logger.info.call_args[0][0]
     
-    # 3. Minutes and Seconds
-    assert handler._format_duration(65) == "1m 5s"
+    # 2. Seconds
+    e2 = PipelineStepTimed(job_id=job_id, step_name="Step2", duration_seconds=1.5)
+    handler.handle_step_timed(e2)
+    assert "Finished Step2 in 1.500s" in mock_logger.info.call_args[0][0]
     
-    # 4. Hours, Minutes, and Seconds
-    assert handler._format_duration(3665) == "1h 1m 5s"
+    # 3. Minutes
+    e3 = PipelineStepTimed(job_id=job_id, step_name="Step3", duration_seconds=65)
+    handler.handle_step_timed(e3)
+    assert "Finished Step3 in 1m 5s" in mock_logger.info.call_args[0][0]
+    
+    # 4. Hours
+    e4 = PipelineStepTimed(job_id=job_id, step_name="Step4", duration_seconds=3665)
+    handler.handle_step_timed(e4)
+    assert "Finished Step4 in 1h 1m 5s" in mock_logger.info.call_args[0][0]

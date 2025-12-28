@@ -14,9 +14,6 @@ class FFmpegAudioProcessor(IAudioProcessor):
         """
         Uses ffmpeg to normalize audio to 16kHz, mono, 16-bit PCM WAV.
         """
-        if not os.path.exists(source_path):
-            raise FileNotFoundError(f"Audio file not found at {source_path}! 😱")
-
         filename = os.path.basename(source_path).rsplit(".", 1)[0] + "_normalized.wav"
         output_path = os.path.join(
             self.work_dir or os.path.dirname(source_path), filename

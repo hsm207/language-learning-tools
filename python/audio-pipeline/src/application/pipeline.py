@@ -1,4 +1,5 @@
 import time
+import os
 from typing import List, Optional, Generator
 from uuid import UUID
 from contextlib import contextmanager
@@ -41,6 +42,9 @@ class AudioProcessingPipeline:
         language: str,
         diarization_options: DiarizationOptions = None,
     ) -> ProcessingJob:
+        if not os.path.exists(source_path):
+            raise FileNotFoundError(f"Source audio file not found: {source_path}")
+
         job = ProcessingJob(
             source_path=source_path, target_language=LanguageTag(language)
         )

@@ -21,6 +21,8 @@ def test_pipeline_records_component_durations(mocker):
         event_bus=mock_bus,
     )
     
+    mocker.patch("os.path.exists", return_value=True)
+    
     # We simulate a "Very Long" process to hit the 'h/m/s' formatting indirectly! 🏎️💨
     # Side effects: [TotalStart, StepStart, StepEnd, ...]
     mocker.patch("time.time", side_effect=[0, 0, 3661, 0, 0, 0, 0, 0, 0, 0, 0, 0]) 

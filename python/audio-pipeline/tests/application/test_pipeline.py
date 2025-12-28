@@ -31,6 +31,9 @@ def test_pipeline_execution_flow(mocker):
         logger=mocker.Mock(spec=ILogger),
     )
 
+    # We mock the system boundary sanity check! 🛡️⚖️
+    mocker.patch("os.path.exists", return_value=True)
+
     # Act
     job = pipeline.execute("source.m4a", "de")
 
@@ -57,6 +60,8 @@ def test_pipeline_failure_handles_exceptions(mocker):
         event_bus=mock_event_bus,
         logger=mocker.Mock(),
     )
+
+    mocker.patch("os.path.exists", return_value=True)
 
     job = pipeline.execute("source.m4a", "de")
 
