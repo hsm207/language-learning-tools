@@ -68,7 +68,7 @@ def test_llama_cpp_translator_parsing_logic_mocked(mocker):
     mocker.patch("os.path.exists", return_value=True)
     translator = LlamaCppTranslator("fake_model", "fake_exe", "fake_grammar")
 
-    mock_raw_output = """
+    mock_raw_output = b"""
 Loading model... done.
 {
   "translation": "Correctly Extracted Text"
