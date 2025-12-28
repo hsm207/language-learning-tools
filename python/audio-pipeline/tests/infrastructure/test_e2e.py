@@ -9,11 +9,15 @@ load_dotenv()
 from src.infrastructure.transcription import WhisperTranscriber
 from src.infrastructure.audio import FFmpegAudioProcessor
 from src.infrastructure.diarization import PyannoteDiarizer
+from src.infrastructure.llama_cpp_translation import LlamaCppTranslator
 from src.infrastructure.logging import StandardLogger
 from src.application.pipeline import AudioProcessingPipeline
 from src.application.services import MaxOverlapAlignmentService
-from src.application.enrichers import SentenceSegmentationEnricher, TokenMergerEnricher
+from src.application.enrichers.segmentation import SentenceSegmentationEnricher
+from src.application.enrichers.merging import TokenMergerEnricher
+from src.application.enrichers.translation import TranslationEnricher
 from src.domain.entities import JobStatus
+from src.domain.value_objects import LanguageTag
 
 RUN_E2E = os.environ.get("RUN_E2E", "false").lower() == "true"
 
@@ -30,11 +34,23 @@ def test_pipeline_end_to_end_real_components():
         model_path="/home/user/Documents/GitHub/whisper.cpp/models/ggml-large-v3.bin",
     )
     diarizer = PyannoteDiarizer()
+    translator = LlamaCppTranslator(
+        model_path="models/llama-3.1-8b-instruct-q4_k_m.gguf",
+        executable_path="/home/user/Documents/GitHub/llama.cpp/build/bin/llama-cli",
+        grammar_path="src/infrastructure/grammars/translation.gbnf",
+        logger=logger,
+    )
 
     # Use production enrichment chain 🧩✨
     enrichers = [
         SentenceSegmentationEnricher(max_duration_seconds=3.0, logger=logger),
         TokenMergerEnricher(),
+        TranslationEnricher(
+            translator=translator, 
+            target_lang=LanguageTag("en"), 
+            context_size=3,
+            logger=logger
+        ),
     ]
 
     pipeline = AudioProcessingPipeline(
@@ -71,3 +87,7 @@ def test_pipeline_end_to_end_real_components():
 
         assert "hallo" in first_utterance.text.lower()
         assert first_utterance.speaker_id.startswith("SPEAKER_")
+        
+        # Verify Translation! 🇩🇪 -> 🇺🇸
+        assert first_utterance.translated_text is not None, "Translation missing!"
+        assert len(first_utterance.translated_text) > 0, "Translation is empty!"
