@@ -8,12 +8,14 @@ T = TypeVar("T", bound=DomainEvent)
 
 class InProcessEventBus(IEventBus):
     """
-    A simple, synchronous in-memory event bus. 
+    A simple, synchronous in-memory event bus.
     Perfect for decoupled communication within a single process. 🌿🏎️💨
     """
 
     def __init__(self):
-        self._handlers: Dict[Type[DomainEvent], List[Callable[[Any], Any]]] = defaultdict(list)
+        self._handlers: Dict[Type[DomainEvent], List[Callable[[Any], Any]]] = (
+            defaultdict(list)
+        )
 
     def publish(self, event: DomainEvent):
         """Dispatches the event to all registered handlers for its type. ⚡️"""

@@ -1,6 +1,11 @@
 from abc import ABC, abstractmethod
 from typing import List, Callable, Type, TypeVar, Any
-from src.domain.value_objects import Utterance, LanguageTag, DiarizationOptions, AudioTranscript
+from src.domain.value_objects import (
+    Utterance,
+    LanguageTag,
+    DiarizationOptions,
+    AudioTranscript,
+)
 from src.domain.entities import AudioArtifact
 from src.domain.events import DomainEvent
 

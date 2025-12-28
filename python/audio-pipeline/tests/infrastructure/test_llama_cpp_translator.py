@@ -20,11 +20,12 @@ def is_llama_available():
 
 
 @pytest.mark.skipif(
-    not is_llama_available(), reason="Llama environment (model/exe/grammar) not found! 🐑🚫"
+    not is_llama_available(),
+    reason="Llama environment (model/exe/grammar) not found! 🐑🚫",
 )
 def test_llama_cpp_translator_integration_real_model():
     """
-    SOTA Integration Test: Verifies that the LlamaCppTranslator actually 
+    SOTA Integration Test: Verifies that the LlamaCppTranslator actually
     banishes the 'Hats' hallucination using the real 8B model! 🦖💎⚖️
     """
     # Arrange

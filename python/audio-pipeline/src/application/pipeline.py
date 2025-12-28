@@ -117,7 +117,9 @@ class AudioProcessingPipeline:
             self.event_bus.publish(event)
 
     @contextmanager
-    def _timed_step(self, job: ProcessingJob, step_name: str) -> Generator[None, None, None]:
+    def _timed_step(
+        self, job: ProcessingJob, step_name: str
+    ) -> Generator[None, None, None]:
         """A context manager to record component duration as a domain event. ⏳✨"""
         start_time = time.time()
         try:

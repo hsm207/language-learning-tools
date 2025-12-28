@@ -63,11 +63,15 @@ class ProcessingJob:
 
     def mark_enriching(self, enricher_name: str = "Batch"):
         self.status = JobStatus.ENRICHING
-        self.record_event(EnrichmentStarted(job_id=self.id, enricher_name=enricher_name))
+        self.record_event(
+            EnrichmentStarted(job_id=self.id, enricher_name=enricher_name)
+        )
 
     def record_step_duration(self, step_name: str, seconds: float):
         self.record_event(
-            PipelineStepTimed(job_id=self.id, step_name=step_name, duration_seconds=seconds)
+            PipelineStepTimed(
+                job_id=self.id, step_name=step_name, duration_seconds=seconds
+            )
         )
 
     def complete(self, transcript: AudioTranscript):

@@ -1,7 +1,13 @@
 import json
 from datetime import timedelta
 from typing import Dict, Any
-from src.domain.value_objects import AudioTranscript, Utterance, Word, TimestampRange, ConfidenceScore
+from src.domain.value_objects import (
+    AudioTranscript,
+    Utterance,
+    Word,
+    TimestampRange,
+    ConfidenceScore,
+)
 from src.domain.interfaces import ITranscriptSerializer
 
 

@@ -62,11 +62,11 @@ def main():
     # 🏛️ Composition Root: Initializing Infrastructure & Application Layers
     log_file_path = os.path.join(args.output_dir, "pipeline.log")
     logger = StandardLogger(name="Pipeline", log_file=log_file_path)
-    
+
     # ⚡️ Reactive Event Bus Setup
     event_bus = InProcessEventBus()
     LoggingEventHandler(logger=logger, bus=event_bus)
-    
+
     audio_processor = FFmpegAudioProcessor()
     transcriber = WhisperTranscriber(
         executable_path="/home/user/Documents/GitHub/whisper.cpp/build/bin/whisper-cli",
@@ -79,19 +79,21 @@ def main():
         grammar_path="src/infrastructure/grammars/translation.gbnf",
         logger=logger,
     )
-    
+
     serializer = JsonTranscriptSerializer()
     result_repo = FileSystemResultRepository(serializer=serializer)
 
     enrichers = [
-        SentenceSegmentationEnricher(max_duration_seconds=args.max_duration, logger=logger),
+        SentenceSegmentationEnricher(
+            max_duration_seconds=args.max_duration, logger=logger
+        ),
         TokenMergerEnricher(),
         TranslationEnricher(
-            translator=translator, 
-            target_lang=LanguageTag(args.target_language), 
+            translator=translator,
+            target_lang=LanguageTag(args.target_language),
             context_size=args.translation_context,
             batch_size=args.translation_batch,
-            logger=logger
+            logger=logger,
         ),
     ]
 

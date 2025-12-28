@@ -53,7 +53,9 @@ class WhisperTranscriber(ITranscriber):
             if result.returncode != 0:
                 raise RuntimeError(f"Whisper failed! Error: {result.stderr}")
         except FileNotFoundError:
-            raise RuntimeError(f"Whisper binary not found at {self.executable_path}! 🚫🔨")
+            raise RuntimeError(
+                f"Whisper binary not found at {self.executable_path}! 🚫🔨"
+            )
 
         json_path = f"{output_base}.json"
 

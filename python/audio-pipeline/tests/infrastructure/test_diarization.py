@@ -16,8 +16,11 @@ def test_pyannote_diarizer_fails_on_missing_token(mocker):
 def test_pyannote_diarizer_fails_on_pipeline_load_error(mocker):
     """Hits the exception branch during pipeline initialization. 😱🥊"""
     mocker.patch.dict(os.environ, {"HF_TOKEN": "valid"})
-    mocker.patch("pyannote.audio.Pipeline.from_pretrained", side_effect=Exception("Network Error"))
-    
+    mocker.patch(
+        "pyannote.audio.Pipeline.from_pretrained",
+        side_effect=Exception("Network Error"),
+    )
+
     with pytest.raises(Exception, match="Network Error"):
         PyannoteDiarizer()
 
@@ -26,7 +29,7 @@ def test_pyannote_diarizer_fails_on_empty_pipeline(mocker):
     """Hits the None check if from_pretrained returns nothing. 👻🔍"""
     mocker.patch.dict(os.environ, {"HF_TOKEN": "valid"})
     mocker.patch("pyannote.audio.Pipeline.from_pretrained", return_value=None)
-    
+
     with pytest.raises(RuntimeError, match="pipeline failed to load"):
         PyannoteDiarizer()
 
@@ -35,10 +38,10 @@ def test_pyannote_diarizer_guards_against_uninitialized_call(mocker):
     """Hits the defensive guard in the diarize method. 🛡️⚖️"""
     mocker.patch.dict(os.environ, {"HF_TOKEN": "valid"})
     mocker.patch("pyannote.audio.Pipeline.from_pretrained", return_value=Mock())
-    
+
     diarizer = PyannoteDiarizer()
-    diarizer.pipeline = None # Force broken state!
-    
+    diarizer.pipeline = None  # Force broken state!
+
     with pytest.raises(RuntimeError, match="not initialized"):
         diarizer.diarize(AudioArtifact(file_path="test.wav"))
 
@@ -48,12 +51,12 @@ def test_pyannote_diarize_with_full_options(mocker):
     mocker.patch.dict(os.environ, {"HF_TOKEN": "valid"})
     mock_pipeline = MagicMock()
     mocker.patch("pyannote.audio.Pipeline.from_pretrained", return_value=mock_pipeline)
-    
+
     diarizer = PyannoteDiarizer()
     options = DiarizationOptions(num_speakers=2, min_speakers=1, max_speakers=3)
-    
+
     diarizer.diarize(AudioArtifact(file_path="test.wav"), options=options)
-    
+
     # Verify the flattened kwargs passed to the pipeline! 🎯
     _, kwargs = mock_pipeline.call_args
     assert kwargs["num_speakers"] == 2

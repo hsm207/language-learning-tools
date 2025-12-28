@@ -14,13 +14,13 @@ class DomainEvent:
     origin_line: int = field(init=False)
 
     def __post_init__(self):
-        # Reach back in the stack to find the first frame that isn't 
+        # Reach back in the stack to find the first frame that isn't
         # in events.py OR entities.py to find the real application origin! 🕵️‍♀️🔬✨
         stack = inspect.stack()
-        
+
         # We ignore frames from these files to find the 'True Caller'
         ignored_files = ["events.py", "entities.py", "contextlib.py", "abc.py"]
-        
+
         for frame_info in stack:
             filename = os.path.basename(frame_info.filename)
             if filename not in ignored_files and not filename.startswith("<"):
@@ -60,6 +60,7 @@ class EnrichmentStarted(DomainEvent):
 @dataclass(frozen=True, kw_only=True)
 class PipelineStepTimed(DomainEvent):
     """Captures the performance of a SOTA component. ⏱️✨"""
+
     job_id: UUID
     step_name: str
     duration_seconds: float

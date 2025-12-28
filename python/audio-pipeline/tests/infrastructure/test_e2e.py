@@ -33,7 +33,7 @@ def test_pipeline_end_to_end_real_components(caplog):
     # Arrange
     caplog.set_level("INFO")
     logger = StandardLogger(name="E2ETest")
-    
+
     # ⚡️ Reactive Event Bus Setup
     event_bus = InProcessEventBus()
     LoggingEventHandler(logger=logger, bus=event_bus)
@@ -56,10 +56,10 @@ def test_pipeline_end_to_end_real_components(caplog):
         SentenceSegmentationEnricher(max_duration_seconds=3.0, logger=logger),
         TokenMergerEnricher(),
         TranslationEnricher(
-            translator=translator, 
-            target_lang=LanguageTag("en"), 
+            translator=translator,
+            target_lang=LanguageTag("en"),
             context_size=3,
-            logger=logger
+            logger=logger,
         ),
     ]
 
@@ -93,7 +93,6 @@ def test_pipeline_end_to_end_real_components(caplog):
         assert len(job.result.utterances) > 0
         assert os.path.exists(output_path), "Repository failed to save the result!"
 
-
         # With 3s threshold, the 10s audio should have several utterances! 📈
         assert (
             len(job.result.utterances) >= 2
@@ -104,7 +103,7 @@ def test_pipeline_end_to_end_real_components(caplog):
 
         assert "hallo" in first_utterance.text.lower()
         assert first_utterance.speaker_id.startswith("SPEAKER_")
-        
+
         # Verify Translation! 🇩🇪 -> 🇺🇸
         assert first_utterance.translated_text is not None, "Translation missing!"
         assert len(first_utterance.translated_text) > 0, "Translation is empty!"

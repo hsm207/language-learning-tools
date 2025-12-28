@@ -80,8 +80,8 @@ def test_pipeline_fails_on_missing_language(mocker):
         alignment_service=mocker.Mock(),
         event_bus=mocker.Mock(),
     )
-    
+
     mocker.patch("os.path.exists", return_value=True)
-    
+
     with pytest.raises(ValueError, match="Target language must be provided"):
         pipeline.execute("source.wav", "")

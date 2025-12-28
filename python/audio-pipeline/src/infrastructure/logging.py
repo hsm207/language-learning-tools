@@ -9,7 +9,9 @@ class StandardLogger(ILogger):
     Python standard library implementation of our SOTA Logger. 🛡️⚖️🏛️
     """
 
-    def __init__(self, name: str, log_file: Optional[str] = None, level: int = logging.INFO):
+    def __init__(
+        self, name: str, log_file: Optional[str] = None, level: int = logging.INFO
+    ):
         self.logger = logging.getLogger(name)
         self.logger.setLevel(level)
 
