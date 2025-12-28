@@ -27,9 +27,19 @@ def test_azure_fast_transcriber_success(mocker):
                 "speaker": 1,
                 "confidence": 0.95,
                 "words": [
-                    {"text": "Hello", "offsetMilliseconds": 1000, "durationMilliseconds": 500, "confidence": 0.99},
-                    {"text": "world", "offsetMilliseconds": 1500, "durationMilliseconds": 500, "confidence": 0.91}
-                ]
+                    {
+                        "text": "Hello",
+                        "offsetMilliseconds": 1000,
+                        "durationMilliseconds": 500,
+                        "confidence": 0.99,
+                    },
+                    {
+                        "text": "world",
+                        "offsetMilliseconds": 1500,
+                        "durationMilliseconds": 500,
+                        "confidence": 0.91,
+                    },
+                ],
             }
         ]
     }
@@ -44,7 +54,9 @@ def test_azure_fast_transcriber_success(mocker):
     mocker.patch("builtins.open", mocker.mock_open(read_data=b"fake_audio_content"))
 
     transcriber = AzureFastTranscriber(api_key="fake_key", region="eastus2")
-    results = transcriber.transcribe(AudioArtifact(file_path="test.wav"), LanguageTag("en"))
+    results = transcriber.transcribe(
+        AudioArtifact(file_path="test.wav"), LanguageTag("en")
+    )
 
     assert len(results) == 1
     utterance = results[0]
@@ -72,7 +84,9 @@ def test_azure_fast_transcriber_failure(mocker):
     mocker.patch("builtins.open", mocker.mock_open(read_data=b"fake_audio_content"))
 
     transcriber = AzureFastTranscriber(api_key="fake_key", region="eastus2")
-    with pytest.raises(RuntimeError, match="Azure Fast Transcription failed! Status: 401"):
+    with pytest.raises(
+        RuntimeError, match="Azure Fast Transcription failed! Status: 401"
+    ):
         transcriber.transcribe(AudioArtifact(file_path="test.wav"), LanguageTag("en"))
 
 

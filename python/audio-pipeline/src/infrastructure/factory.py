@@ -30,7 +30,15 @@ class PipelineComponentFactory:
         self.args = args
         self.logger = logger
 
-    def build_components(self) -> Tuple[IAudioProcessor, ITranscriber, IDiarizer, IAlignmentService, List[IAudioEnricher]]:
+    def build_components(
+        self,
+    ) -> Tuple[
+        IAudioProcessor,
+        ITranscriber,
+        IDiarizer,
+        IAlignmentService,
+        List[IAudioEnricher],
+    ]:
         audio_processor = FFmpegAudioProcessor()
         alignment_service = MaxOverlapAlignmentService()
 
@@ -39,41 +47,49 @@ class PipelineComponentFactory:
         else:
             return self._build_local_stack(audio_processor, alignment_service)
 
-    def _build_local_stack(self, audio_processor, alignment_service) -> Tuple[IAudioProcessor, ITranscriber, IDiarizer, IAlignmentService, List[IAudioEnricher]]:
+    def _build_local_stack(self, audio_processor, alignment_service) -> Tuple[
+        IAudioProcessor,
+        ITranscriber,
+        IDiarizer,
+        IAlignmentService,
+        List[IAudioEnricher],
+    ]:
         self.logger.info("🏠 Local Mode: Using Whisper & Pyannote.")
-        
+
         transcriber = WhisperTranscriber(
             executable_path="/home/user/Documents/GitHub/whisper.cpp/build/bin/whisper-cli",
             model_path="/home/user/Documents/GitHub/whisper.cpp/models/ggml-large-v3.bin",
             logger=self.logger,
         )
         diarizer = PyannoteDiarizer(logger=self.logger)
-        
+
         enrichers = self._build_base_enrichers()
         enrichers.insert(1, TokenMergerEnricher())  # Local needs token merging! 🧩
-        
+
         return audio_processor, transcriber, diarizer, alignment_service, enrichers
 
-    def _build_azure_stack(self, audio_processor, alignment_service) -> Tuple[IAudioProcessor, ITranscriber, IDiarizer, IAlignmentService, List[IAudioEnricher]]:
+    def _build_azure_stack(self, audio_processor, alignment_service) -> Tuple[
+        IAudioProcessor,
+        ITranscriber,
+        IDiarizer,
+        IAlignmentService,
+        List[IAudioEnricher],
+    ]:
         self.logger.info("☁️ Azure Mode: Using Fast Transcription & Null Diarizer!")
-        
+
         api_key = os.environ.get("AZURE_SPEECH_KEY")
         region = os.environ.get("AZURE_SPEECH_REGION")
-        
+
         if not api_key or not region:
-            raise ValueError(
-                "❌ Missing AZURE_SPEECH_KEY or AZURE_SPEECH_REGION! "
-            )
-            
+            raise ValueError("❌ Missing AZURE_SPEECH_KEY or AZURE_SPEECH_REGION! ")
+
         transcriber = AzureFastTranscriber(
-            api_key=api_key,
-            region=region,
-            logger=self.logger
+            api_key=api_key, region=region, logger=self.logger
         )
         diarizer = NullDiarizer(logger=self.logger)
-        
+
         enrichers = self._build_base_enrichers()  # Azure already provides words! 🧼
-        
+
         return audio_processor, transcriber, diarizer, alignment_service, enrichers
 
     def _build_base_enrichers(self) -> List[IAudioEnricher]:
@@ -83,7 +99,7 @@ class PipelineComponentFactory:
             grammar_path="src/infrastructure/grammars/translation.gbnf",
             logger=self.logger,
         )
-        
+
         return [
             SentenceSegmentationEnricher(
                 max_duration_seconds=self.args.max_duration, logger=self.logger

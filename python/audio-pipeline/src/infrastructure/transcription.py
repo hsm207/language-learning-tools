@@ -138,7 +138,9 @@ class AzureFastTranscriber(ITranscriber):
     def transcribe(
         self, audio: AudioArtifact, language: LanguageTag
     ) -> List[Utterance]:
-        self.logger.info(f"🚀 Launching Azure Fast Transcription for {audio.file_path}...")
+        self.logger.info(
+            f"🚀 Launching Azure Fast Transcription for {audio.file_path}..."
+        )
 
         definition = {
             "locales": [str(language)],
@@ -202,5 +204,7 @@ class AzureFastTranscriber(ITranscriber):
                 )
             )
 
-        self.logger.info(f"✅ Azure Transcription complete! Found {len(utterances)} phrases.")
+        self.logger.info(
+            f"✅ Azure Transcription complete! Found {len(utterances)} phrases."
+        )
         return utterances

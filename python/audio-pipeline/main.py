@@ -21,7 +21,9 @@ def main():
         "--output-dir", default="./output", help="Directory for results and temp files"
     )
     parser.add_argument(
-        "--language", default="de-DE", help="Target language code (BCP-47 for Azure, e.g., de-DE)"
+        "--language",
+        default="de-DE",
+        help="Target language code (BCP-47 for Azure, e.g., de-DE)",
     )
     parser.add_argument(
         "--target-language", default="en", help="Language to translate into"
@@ -46,7 +48,9 @@ def main():
         help="Number of utterances to translate in a single block (currently 1 for best accuracy)",
     )
     parser.add_argument(
-        "--use-azure", action="store_true", help="Use Azure Fast Transcription instead of local Whisper/Pyannote. ☁️🏎️💨"
+        "--use-azure",
+        action="store_true",
+        help="Use Azure Fast Transcription instead of local Whisper/Pyannote. ☁️🏎️💨",
     )
 
     args = parser.parse_args()
