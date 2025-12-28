@@ -14,7 +14,7 @@ from src.domain.interfaces import ILogger, IEventBus
 class LoggingEventHandler:
     """
     Subscribes to domain events and centralizes pipeline logging.
-    Provides surgical granularity and stack-trace origin for SOTA troubleshooting! 🏛️📝✨
+    Provides surgical granularity and stack-trace origin for troubleshooting! 🏛️📝✨
     """
 
     def __init__(self, logger: ILogger, bus: IEventBus):

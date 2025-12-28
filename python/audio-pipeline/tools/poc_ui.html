@@ -263,7 +263,7 @@
             render(data, onPlay, onLoop) {
                 this.container.innerHTML = '';
                 if (data.target_language) {
-                    this.setStatus(`🌍 SOTA Translation Active: ${data.target_language.toUpperCase()} 🥨🗽`);
+                    this.setStatus(`🌍 Translation Active: ${data.target_language.toUpperCase()} 🥨🗽`);
                 }
                 data.utterances.forEach((u, idx) => {
                     const row = this._createRow(u, idx, onPlay, onLoop);
@@ -326,7 +326,7 @@
                     ? `<div class="translation">${u.translated_text}</div>` 
                     : '';
 
-                // SOTA Fallback: If words are missing, show the raw text! 🛡️💎
+                // Fallback: If words are missing, show the raw text! 🛡️💎
                 const originalHtml = (u.words && u.words.length > 0)
                     ? u.words.map((w, wi) => `<span class="word future" id="w-${idx}-${wi}" data-start="${w.start}" data-end="${w.end}">${w.text}</span>`).join(' ')
                     : `<span class="original-raw">${u.text}</span>`;

@@ -59,7 +59,7 @@ class EnrichmentStarted(DomainEvent):
 
 @dataclass(frozen=True, kw_only=True)
 class PipelineStepTimed(DomainEvent):
-    """Captures the performance of a SOTA component. ⏱️✨"""
+    """Captures the performance of a component. ⏱️✨"""
 
     job_id: UUID
     step_name: str

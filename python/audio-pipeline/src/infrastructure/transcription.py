@@ -120,7 +120,7 @@ class WhisperTranscriber(ITranscriber):
 
 class AzureFastTranscriber(ITranscriber):
     """
-    SOTA Azure AI Speech Fast Transcription implementation. 🎤☁️✨
+    Azure AI Speech Fast Transcription implementation. 🎤☁️✨
     Returns utterances with speaker labels already attached (Cloud-Native Diarization! 🏷️).
     """
 

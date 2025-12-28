@@ -23,7 +23,7 @@ class IEventBus(ABC):
 
 
 class IResultRepository(ABC):
-    """Contract for persisting the final SOTA results. Cloud-ready! ☁️📦✨"""
+    """Contract for persisting the final results. Cloud-ready! ☁️📦✨"""
 
     @abstractmethod
     def save(self, transcript: AudioTranscript, output_path: str):

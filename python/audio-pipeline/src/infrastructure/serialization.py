@@ -13,7 +13,7 @@ from src.domain.interfaces import ITranscriptSerializer
 
 class JsonTranscriptSerializer(ITranscriptSerializer):
     """
-    Handles SOTA serialization of AudioTranscript to/from JSON. 💎✨
+    Handles serialization of AudioTranscript to/from JSON. 💎✨
     """
 
     def serialize(self, transcript: AudioTranscript) -> str:

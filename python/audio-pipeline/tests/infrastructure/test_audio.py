@@ -35,9 +35,9 @@ def test_ffmpeg_processor_failure_on_binary_error(mocker, tmp_path):
     """Hits the non-zero return code branch. 🏎️🥊"""
     source = tmp_path / "test.mp3"
     source.write_text("dummy")
-    mock_res = mocker.Mock(returncode=1, stderr="SOTA Error!")
+    mock_res = mocker.Mock(returncode=1, stderr="Error!")
     mocker.patch("subprocess.run", return_value=mock_res)
 
     processor = FFmpegAudioProcessor()
-    with pytest.raises(RuntimeError, match="FFmpeg failed! Error: SOTA Error!"):
+    with pytest.raises(RuntimeError, match="FFmpeg failed! Error: Error!"):
         processor.normalize(str(source))

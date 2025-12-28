@@ -11,7 +11,7 @@ from src.domain.value_objects import (
 from src.infrastructure.serialization import JsonTranscriptSerializer
 
 
-def test_json_transcript_serializer_projects_all_sota_fields():
+def test_json_transcript_serializer_projects_all_fields():
     """
     Verifies that the Serializer adheres to our new
     Translation Contract by outputting all required schema fields! 🛡️⚖️🏛️

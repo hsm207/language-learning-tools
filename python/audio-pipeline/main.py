@@ -15,7 +15,7 @@ from src.domain.value_objects import LanguageTag
 def main():
     load_dotenv()
 
-    parser = argparse.ArgumentParser(description="SOTA Audio Pipeline CLI 🎙️✨")
+    parser = argparse.ArgumentParser(description="Audio Pipeline CLI 🎙️✨")
     parser.add_argument("input", help="Path to the source audio file")
     parser.add_argument(
         "--output-dir", default="./output", help="Directory for results and temp files"

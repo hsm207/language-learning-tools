@@ -22,7 +22,7 @@ from src.application.enrichers.translation import TranslationEnricher
 
 class PipelineComponentFactory:
     """
-    SOTA Composition Root Factory. 🏗️✨
+    Composition Root Factory. 🏗️✨
     Encapsulates the 'Construction Strategy' for different providers to keep the core OCP-compliant! 🛡️⚖️🏛️
     """
 

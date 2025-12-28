@@ -24,12 +24,12 @@ class PyannoteDiarizer(IDiarizer):
         token = os.environ.get("HF_TOKEN")
         if not token:
             raise ValueError(
-                "❌ Missing HF_TOKEN! Pyannote needs a token to load gated SOTA models!"
+                "❌ Missing HF_TOKEN! Pyannote needs a token to load gated models!"
             )
 
         try:
             self.logger.debug(
-                "Loading SOTA Pyannote community-1 diarization pipeline..."
+                "Loading Pyannote community-1 diarization pipeline..."
             )
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             self.pipeline = Pipeline.from_pretrained(
@@ -50,7 +50,7 @@ class PyannoteDiarizer(IDiarizer):
         self, audio: AudioArtifact, options: DiarizationOptions = None
     ) -> List[Utterance]:
         """
-        Runs the SOTA Pyannote 4.0 community-1 pipeline to find speaker turns.
+        Runs the Pyannote 4.0 community-1 pipeline to find speaker turns.
         """
         if not self.pipeline:
             raise RuntimeError("Diarizer pipeline not initialized!")
