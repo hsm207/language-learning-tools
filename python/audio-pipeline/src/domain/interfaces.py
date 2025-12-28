@@ -45,7 +45,11 @@ class IAudioProcessor(ABC):
 class ITranslator(ABC):
     @abstractmethod
     def translate(
-        self, texts: List[str], source_lang: LanguageTag, target_lang: LanguageTag
+        self,
+        texts: List[str],
+        source_lang: LanguageTag,
+        target_lang: LanguageTag,
+        context: List[str] = None,
     ) -> List[str]:
         pass
 
