@@ -8,8 +8,13 @@ from src.infrastructure.logging import LocalLogger
 from src.infrastructure.serialization import JsonTranscriptSerializer
 from src.application.pipeline import AudioProcessingPipeline
 from src.application.services import MaxOverlapAlignmentService
-from src.application.enrichers import SentenceSegmentationEnricher, TokenMergerEnricher
-from src.domain.value_objects import DiarizationOptions
+from src.application.enrichers import (
+    SentenceSegmentationEnricher,
+    TokenMergerEnricher,
+    TranslationEnricher,
+)
+from src.infrastructure.llama_cpp_translation import LlamaCppTranslator
+from src.domain.value_objects import DiarizationOptions, LanguageTag
 
 
 def main():
@@ -24,6 +29,9 @@ def main():
         "--language", default="de", help="Target language code (e.g., de, en)"
     )
     parser.add_argument(
+        "--target-language", default="en", help="Language to translate into"
+    )
+    parser.add_argument(
         "--num-speakers", type=int, help="Expected number of speakers"
     )
     parser.add_argument(
@@ -31,6 +39,18 @@ def main():
         type=float,
         default=15.0,
         help="Max duration in seconds for sentence segmentation",
+    )
+    parser.add_argument(
+        "--translation-context",
+        type=int,
+        default=3,
+        help="Number of preceding utterances to provide as context for translation",
+    )
+    parser.add_argument(
+        "--translation-batch",
+        type=int,
+        default=1,
+        help="Number of utterances to translate in a single block (currently 1 for best accuracy)",
     )
 
     args = parser.parse_args()
@@ -51,6 +71,14 @@ def main():
         logger=logger.get_child("Transcriber"),
     )
     diarizer = PyannoteDiarizer(logger=logger.get_child("Diarizer"))
+    
+    # Llama Translator Configuration 🦕💎
+    translator = LlamaCppTranslator(
+        model_path="models/llama-3.1-8b-instruct-q4_k_m.gguf",
+        executable_path="/home/user/Documents/GitHub/llama.cpp/build/bin/llama-cli",
+        grammar_path="src/infrastructure/grammars/translation.gbnf",
+        logger=logger.get_child("Translator"),
+    )
     serializer = JsonTranscriptSerializer()
 
     # 2. Setup Application
@@ -59,6 +87,13 @@ def main():
             max_duration_seconds=args.max_duration, logger=logger.get_child("SentenceSegmenter")
         ),
         TokenMergerEnricher(),
+        TranslationEnricher(
+            translator=translator,
+            target_lang=LanguageTag(args.target_language),
+            context_size=args.translation_context,
+            batch_size=args.translation_batch,
+            logger=logger.get_child("TranslationEnricher"),
+        ),
     ]
 
     pipeline = AudioProcessingPipeline(

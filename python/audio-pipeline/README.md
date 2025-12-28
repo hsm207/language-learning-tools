@@ -6,20 +6,29 @@ An audio processing pipeline for language learning applications. Built using Dom
 The project follows a layered approach:
 - **Domain**: Business logic and value objects (`Utterance`, `Word`, `AudioTranscript`).
 - **Application**: Orchestration logic and service interfaces.
-- **Infrastructure**: Implementation adapters for Whisper, Pyannote, and FFmpeg.
+- **Infrastructure**: Implementation adapters for Whisper, Pyannote, and Llama 3.1.
 
 ## ✨ Features
 - **Transcription**: Word-level timestamps for audio alignment.
 - **Diarization**: Speaker identification and turn detection.
 - **Alignment**: Logic to associate text with specific speakers.
 - **Segmentation**: Monologue splitting for improved readability.
+- **Translation**: Context-aware German-to-English translation using local LLMs.
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 - Python 3.10+
 - `ffmpeg` installed and available in your system PATH.
+- `llama.cpp` built and available (set path in `main.py` or config).
 - A HuggingFace account and `HF_TOKEN` configured in a `.env` file for accessing gated models.
+
+### 🧠 Models
+The translation feature requires a local LLM in GGUF format.
+1. Create the `models/` directory: `mkdir -p python/audio-pipeline/models`
+2. Download **Llama 3.1 8B Instruct (Q4_K_M)**:
+   - [HuggingFace - bartowski/Meta-Llama-3.1-8B-Instruct-GGUF](https://huggingface.co/bartowski/Meta-Llama-3.1-8B-Instruct-GGUF)
+   - Place the file at: `python/audio-pipeline/models/llama-3.1-8b-instruct-q4_k_m.gguf`
 
 ### Usage
 Process an audio file via the CLI:

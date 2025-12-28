@@ -11,6 +11,7 @@ class JsonTranscriptSerializer:
     def serialize(self, transcript: AudioTranscript) -> str:
         """Converts an AudioTranscript into a high-fidelity JSON string. Projecting... 🏹🎯"""
         data = {
+            "target_language": transcript.target_language,
             "utterances": [self._utterance_to_dict(u) for u in transcript.utterances]
         }
         return json.dumps(data, indent=4, ensure_ascii=False)
@@ -19,6 +20,7 @@ class JsonTranscriptSerializer:
         return {
             "speaker_id": u.speaker_id,
             "text": u.text,
+            "translated_text": u.translated_text,
             "start": u.timestamp.start.total_seconds(),
             "end": u.timestamp.end.total_seconds(),
             "confidence": float(u.confidence),
