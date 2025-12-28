@@ -16,6 +16,7 @@ dependencies = [
     "azure-mgmt-cognitiveservices>=13.5.0",
     "azure-ai-transcription>=1.0.0b2",
     "python-dotenv>=1.0.1",
+    "httpx>=0.28.1",
 ]
 
 [tool.uv]

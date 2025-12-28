@@ -86,3 +86,18 @@ class PyannoteDiarizer(IDiarizer):
 
         self.logger.debug(f"Diarization complete! Found {len(turns)} speaker turns.")
         return turns
+
+
+class NullDiarizer(IDiarizer):
+    """
+    A Null Object implementation for when diarization is handled by the transcriber (e.g., Azure Fast Transcription). 🦖🚫
+    """
+
+    def __init__(self, logger: ILogger = NullLogger()):
+        self.logger = logger
+
+    def diarize(
+        self, audio: AudioArtifact, options: DiarizationOptions = None
+    ) -> List[Utterance]:
+        self.logger.debug("NullDiarizer: Work is already done in the cloud! ☁️✨")
+        return []
