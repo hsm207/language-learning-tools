@@ -1,6 +1,7 @@
 import subprocess
 import os
-from src.domain.interfaces import IAudioProcessor, ILogger, NullLogger
+from src.domain.interfaces import IAudioProcessor, ILogger
+from src.infrastructure.logging import NullLogger
 from src.domain.entities import AudioArtifact
 
 
@@ -13,9 +14,6 @@ class FFmpegAudioProcessor(IAudioProcessor):
         """
         Uses ffmpeg to normalize audio to 16kHz, mono, 16-bit PCM WAV.
         """
-        if not os.path.exists(source_path):
-            raise FileNotFoundError(f"Audio file not found at {source_path}! 😱")
-
         filename = os.path.basename(source_path).rsplit(".", 1)[0] + "_normalized.wav"
         output_path = os.path.join(
             self.work_dir or os.path.dirname(source_path), filename
@@ -43,8 +41,11 @@ class FFmpegAudioProcessor(IAudioProcessor):
 
         self.logger.debug(f"Running FFmpeg command: {' '.join(command)}")
 
-        result = subprocess.run(command, capture_output=True, text=True)
-        if result.returncode != 0:
-            raise RuntimeError(f"FFmpeg failed! Error: {result.stderr}")
+        try:
+            result = subprocess.run(command, capture_output=True, text=True)
+            if result.returncode != 0:
+                raise RuntimeError(f"FFmpeg failed! Error: {result.stderr}")
+        except FileNotFoundError:
+            raise RuntimeError(f"FFmpeg binary not found! Please install ffmpeg. 🚫🔨")
 
         return AudioArtifact(file_path=output_path, format="wav", sample_rate=16000)

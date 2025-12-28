@@ -1,9 +1,9 @@
 import subprocess
-import os
 import json
 from typing import List
 from datetime import timedelta
-from src.domain.interfaces import ITranscriber, ILogger, NullLogger
+from src.domain.interfaces import ITranscriber, ILogger
+from src.infrastructure.logging import NullLogger
 from src.domain.entities import AudioArtifact
 from src.domain.value_objects import (
     Utterance,
@@ -48,14 +48,16 @@ class WhisperTranscriber(ITranscriber):
 
         self.logger.debug(f"Running Whisper command: {' '.join(command)}")
 
-        result = subprocess.run(command, capture_output=True, text=True)
-        if result.returncode != 0:
-            raise RuntimeError(f"Whisper failed! Error: {result.stderr}")
+        try:
+            result = subprocess.run(command, capture_output=True, text=True)
+            if result.returncode != 0:
+                raise RuntimeError(f"Whisper failed! Error: {result.stderr}")
+        except FileNotFoundError:
+            raise RuntimeError(
+                f"Whisper binary not found at {self.executable_path}! 🚫🔨"
+            )
 
         json_path = f"{output_base}.json"
-        if not os.path.exists(json_path):
-            self.logger.error(f"❌ Whisper JSON output not found at {json_path}!")
-            return []
 
         with open(json_path, "r", encoding="utf-8") as f:
             data = json.load(f)

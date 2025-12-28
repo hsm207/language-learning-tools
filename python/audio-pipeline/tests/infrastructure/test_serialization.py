@@ -1,7 +1,15 @@
 import json
 from datetime import timedelta
-from src.domain.value_objects import AudioTranscript, Utterance, TimestampRange, ConfidenceScore, Word, LanguageTag
+from src.domain.value_objects import (
+    AudioTranscript,
+    Utterance,
+    TimestampRange,
+    ConfidenceScore,
+    Word,
+    LanguageTag,
+)
 from src.infrastructure.serialization import JsonTranscriptSerializer
+
 
 def test_json_transcript_serializer_projects_all_sota_fields():
     """
@@ -11,9 +19,9 @@ def test_json_transcript_serializer_projects_all_sota_fields():
     # Arrange
     words = [
         Word(
-            text="Hallo", 
-            timestamp=TimestampRange(timedelta(0), timedelta(seconds=1)), 
-            confidence=ConfidenceScore(0.99)
+            text="Hallo",
+            timestamp=TimestampRange(timedelta(0), timedelta(seconds=1)),
+            confidence=ConfidenceScore(0.99),
         )
     ]
     utterance = Utterance(
@@ -22,11 +30,11 @@ def test_json_transcript_serializer_projects_all_sota_fields():
         speaker_id="SPEAKER_01",
         confidence=ConfidenceScore(0.99),
         words=words,
-        translated_text="Hello" # This is our new requirement! 🗽💎
+        translated_text="Hello",  # This is our new requirement! 🗽💎
     )
     transcript = AudioTranscript(
         utterances=[utterance],
-        target_language=LanguageTag("en") # This is our new requirement! 🗽💎
+        target_language=LanguageTag("en"),  # This is our new requirement! 🗽💎
     )
     serializer = JsonTranscriptSerializer()
 
@@ -35,14 +43,18 @@ def test_json_transcript_serializer_projects_all_sota_fields():
     data = json.loads(json_output)
 
     # Assert: Verification of the Public API Contract! 🏛️⚖️
-    # If any of these fail, we have a SOTA regression! 📉🥊
-    assert data["target_language"] == "en", "Root 'target_language' missing from API contract!"
+    # If any of these fail, we have a regression! 📉🥊
+    assert (
+        data["target_language"] == "en"
+    ), "Root 'target_language' missing from API contract!"
     assert len(data["utterances"]) == 1
-    
+
     u_data = data["utterances"][0]
-    assert u_data["speaker_id"] == "SPEAKER_01"
+    assert u_data["speaker"] == "SPEAKER_01"
     assert u_data["text"] == "Hallo"
-    assert u_data["translated_text"] == "Hello", "Utterance 'translated_text' missing from API contract!"
+    assert (
+        u_data["translated_text"] == "Hello"
+    ), "Utterance 'translated_text' missing from API contract!"
     assert "start" in u_data
     assert "end" in u_data
     assert "confidence" in u_data

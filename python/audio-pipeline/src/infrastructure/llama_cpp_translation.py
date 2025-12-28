@@ -3,7 +3,8 @@ import subprocess
 import os
 import dataclasses
 from typing import List, Optional
-from src.domain.interfaces import ITranslator, ILogger, NullLogger
+from src.domain.interfaces import ITranslator, ILogger
+from src.infrastructure.logging import NullLogger
 from src.domain.value_objects import LanguageTag
 
 
@@ -35,7 +36,9 @@ class LlamaCppTranslator(ITranslator):
         self.logger = logger
 
         self._verify_dependencies()
-        self.logger.info(f"🦖 LlamaCppTranslator initialized with model: {os.path.basename(model_path)}")
+        self.logger.info(
+            f"🦖 LlamaCppTranslator initialized with model: {os.path.basename(model_path)}"
+        )
 
     def translate(
         self,
@@ -52,7 +55,7 @@ class LlamaCppTranslator(ITranslator):
     def _translate_single(self, text: str, context: Optional[List[str]]) -> str:
         """Orchestrates the translation of a single text turn. ⚓️🎯"""
         prompt = self._build_prompt(text, context)
-        
+
         try:
             raw_output = self._run_inference(prompt)
             return self._extract_field(raw_output, "translation")
@@ -64,32 +67,37 @@ class LlamaCppTranslator(ITranslator):
         """Executes the llama-cli process and captures the raw output. 🏎️💨"""
         cmd = [
             self.executable_path,
-            "-m", self.model_path,
-            "-p", prompt,
-            "--grammar-file", self.grammar_path,
-            "-n", "128",           # Predict max 128 tokens
-            "--temp", "0.1",       # Low temperature for deterministic output
-            "--threads", str(self.threads),
-            "--ctx-size", str(self.n_ctx),
-            "--no-display-prompt", # Don't echo the prompt to stdout
-            "--log-disable",       # Suppress llama.cpp banner/metrics
-            "-st",                 # Single-turn mode (exit after EOT)
-            "--simple-io"          # Minimalist IO for cleaner stream capture
+            "-m",
+            self.model_path,
+            "-p",
+            prompt,
+            "--grammar-file",
+            self.grammar_path,
+            "-n",
+            "128",  # Predict max 128 tokens
+            "--temp",
+            "0.1",  # Low temperature for deterministic output
+            "--threads",
+            str(self.threads),
+            "--ctx-size",
+            str(self.n_ctx),
+            "--no-display-prompt",  # Don't echo the prompt to stdout
+            "--log-disable",  # Suppress llama.cpp banner/metrics
+            "-st",  # Single-turn mode (exit after EOT)
+            "--simple-io",  # Minimalist IO for cleaner stream capture
         ]
 
         self.logger.debug(f"🚀 Spawning Llama-CLI for inference...")
-        process = subprocess.run(
-            cmd, capture_output=True, text=True, check=True
-        )
+        process = subprocess.run(cmd, capture_output=True, text=True, check=True)
         return process.stdout.strip()
 
     def _extract_field(self, raw_output: str, field_name: str) -> str:
         """Surgically extracts a field from the first JSON block found in output. ✂️💎"""
-        # We slice between '{' and '}' because llama-cli often appends trailing artifacts 
+        # We slice between '{' and '}' because llama-cli often appends trailing artifacts
         # like ' [end of text]', metrics, or newlines that break direct json.loads() calls.
         json_start = raw_output.find("{")
         json_end = raw_output.rfind("}")
-        
+
         if json_start == -1 or json_end == -1:
             self.logger.error(f"❌ No JSON block found in Llama output: {raw_output}")
             return ""
@@ -109,7 +117,7 @@ class LlamaCppTranslator(ITranslator):
             "The 'CONTEXT' strings are for reference only—DO NOT translate them. "
             "Output ONLY the English translation of the 'TARGET' string in the required JSON format."
         )
-        
+
         context_str = "\n".join(context) if context else "None"
         user_msg = (
             f"CONTEXT (for reference only):\n{context_str}\n\n"

@@ -1,7 +1,8 @@
 import re
 import dataclasses
 from typing import List
-from src.domain.interfaces import IAudioEnricher, ILogger, NullLogger
+from src.domain.interfaces import IAudioEnricher, ILogger
+from src.infrastructure.logging import NullLogger
 from src.domain.value_objects import (
     Utterance,
     LanguageTag,
@@ -28,9 +29,6 @@ class SentenceSegmentationEnricher(IAudioEnricher):
     def enrich(
         self, utterances: List[Utterance], language: LanguageTag
     ) -> List[Utterance]:
-        if not utterances:
-            return []
-
         final_utterances = []
         for u in utterances:
             # Recursively split long utterances! 🔄✂️

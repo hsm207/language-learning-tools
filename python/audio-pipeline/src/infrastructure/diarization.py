@@ -3,7 +3,8 @@ import torch
 from typing import List
 from datetime import timedelta
 from pyannote.audio import Pipeline
-from src.domain.interfaces import IDiarizer, ILogger, NullLogger
+from src.domain.interfaces import IDiarizer, ILogger
+from src.infrastructure.logging import NullLogger
 from src.domain.entities import AudioArtifact
 from src.domain.value_objects import (
     Utterance,
@@ -58,14 +59,13 @@ class PyannoteDiarizer(IDiarizer):
             f"Running diarization on {audio.file_path} with options: {options}"
         )
 
-        kwargs = {}
-        if options:
-            if options.num_speakers is not None:
-                kwargs["num_speakers"] = options.num_speakers
-            if options.min_speakers is not None:
-                kwargs["min_speakers"] = options.min_speakers
-            if options.max_speakers is not None:
-                kwargs["max_speakers"] = options.max_speakers
+        # Flatten options logic! 🏎️💨
+        options_map = {
+            "num_speakers": options.num_speakers if options else None,
+            "min_speakers": options.min_speakers if options else None,
+            "max_speakers": options.max_speakers if options else None,
+        }
+        kwargs = {k: v for k, v in options_map.items() if v is not None}
 
         output = self.pipeline(audio.file_path, **kwargs)
         diarization = output.speaker_diarization

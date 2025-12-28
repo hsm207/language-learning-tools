@@ -1,6 +1,7 @@
 import dataclasses
 from typing import List
-from src.domain.interfaces import IAudioEnricher, ITranslator, ILogger, NullLogger
+from src.domain.interfaces import IAudioEnricher, ITranslator, ILogger
+from src.infrastructure.logging import NullLogger
 from src.domain.value_objects import Utterance, LanguageTag
 
 
@@ -27,9 +28,6 @@ class TranslationEnricher(IAudioEnricher):
     def enrich(
         self, utterances: List[Utterance], language: LanguageTag
     ) -> List[Utterance]:
-        if not utterances:
-            return []
-
         self.logger.info(
             f"🌍 Translating {len(utterances)} utterances to {self.target_lang} (context_size={self.context_size})..."
         )
@@ -37,19 +35,19 @@ class TranslationEnricher(IAudioEnricher):
 
         for i in range(0, len(utterances), self.batch_size):
             target_batch = utterances[i : i + self.batch_size]
-            
+
             context_start = max(0, i - self.context_size)
             context_batch = utterances[context_start:i]
-            
+
             texts = [u.text for u in target_batch]
             context_texts = [u.text for u in context_batch]
 
             try:
                 translated_texts = self.translator.translate(
-                    texts, 
-                    source_lang=language, 
+                    texts,
+                    source_lang=language,
                     target_lang=self.target_lang,
-                    context=context_texts
+                    context=context_texts,
                 )
 
                 if len(translated_texts) != len(target_batch):
