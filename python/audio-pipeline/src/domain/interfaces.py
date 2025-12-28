@@ -1,7 +1,36 @@
 from abc import ABC, abstractmethod
-from typing import List
-from src.domain.value_objects import Utterance, LanguageTag, DiarizationOptions
+from typing import List, Callable, Type, TypeVar, Any
+from src.domain.value_objects import Utterance, LanguageTag, DiarizationOptions, AudioTranscript
 from src.domain.entities import AudioArtifact
+from src.domain.events import DomainEvent
+
+T = TypeVar("T", bound=DomainEvent)
+
+
+class IEventBus(ABC):
+    @abstractmethod
+    def publish(self, event: DomainEvent):
+        pass
+
+    @abstractmethod
+    def subscribe(self, event_type: Type[T], handler: Callable[[T], Any]):
+        pass
+
+
+class IResultRepository(ABC):
+    """Contract for persisting the final SOTA results. Cloud-ready! ☁️📦✨"""
+
+    @abstractmethod
+    def save(self, transcript: AudioTranscript, output_path: str):
+        pass
+
+
+class ITranscriptSerializer(ABC):
+    """Contract for converting AudioTranscripts into transportable formats. 💎✨"""
+
+    @abstractmethod
+    def serialize(self, transcript: AudioTranscript) -> str:
+        pass
 
 
 class ITranscriber(ABC):
@@ -68,21 +97,5 @@ class ILogger(ABC):
         pass
 
     @abstractmethod
-    def error(self, message: str):
-        pass
-
-
-class NullLogger(ILogger):
-    """The Null logger implementation. 🤫💖"""
-
-    def info(self, message: str):
-        pass
-
-    def debug(self, message: str):
-        pass
-
-    def warning(self, message: str):
-        pass
-
     def error(self, message: str):
         pass
