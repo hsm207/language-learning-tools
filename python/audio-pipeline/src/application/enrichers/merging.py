@@ -1,7 +1,13 @@
 import dataclasses
 from typing import List
 from src.domain.interfaces import IAudioEnricher
-from src.domain.value_objects import Utterance, LanguageTag, Word, TimestampRange, ConfidenceScore
+from src.domain.value_objects import (
+    Utterance,
+    LanguageTag,
+    Word,
+    TimestampRange,
+    ConfidenceScore,
+)
 
 
 class TokenMergerEnricher(IAudioEnricher):

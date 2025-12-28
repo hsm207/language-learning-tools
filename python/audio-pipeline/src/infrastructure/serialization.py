@@ -12,7 +12,7 @@ class JsonTranscriptSerializer:
         """Converts an AudioTranscript into a high-fidelity JSON string. Projecting... 🏹🎯"""
         data = {
             "target_language": transcript.target_language,
-            "utterances": [self._utterance_to_dict(u) for u in transcript.utterances]
+            "utterances": [self._utterance_to_dict(u) for u in transcript.utterances],
         }
         return json.dumps(data, indent=4, ensure_ascii=False)
 

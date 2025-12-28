@@ -31,9 +31,7 @@ def main():
     parser.add_argument(
         "--target-language", default="en", help="Language to translate into"
     )
-    parser.add_argument(
-        "--num-speakers", type=int, help="Expected number of speakers"
-    )
+    parser.add_argument("--num-speakers", type=int, help="Expected number of speakers")
     parser.add_argument(
         "--max-duration",
         type=float,
@@ -71,7 +69,7 @@ def main():
         logger=logger.get_child("Transcriber"),
     )
     diarizer = PyannoteDiarizer(logger=logger.get_child("Diarizer"))
-    
+
     # Llama Translator Configuration 🦕💎
     translator = LlamaCppTranslator(
         model_path="models/llama-3.1-8b-instruct-q4_k_m.gguf",
@@ -84,7 +82,8 @@ def main():
     # 2. Setup Application
     enrichers = [
         SentenceSegmentationEnricher(
-            max_duration_seconds=args.max_duration, logger=logger.get_child("SentenceSegmenter")
+            max_duration_seconds=args.max_duration,
+            logger=logger.get_child("SentenceSegmenter"),
         ),
         TokenMergerEnricher(),
         TranslationEnricher(

@@ -96,7 +96,9 @@ def test_recursive_segmentation_splits_at_punctuation(raw_utterances, caplog):
     THRESHOLD = 3.0
     # Inject a StandardLogger so caplog works! 👂💎⚖️
     logger = StandardLogger(name="SentenceSegmentationEnricher")
-    enricher = SentenceSegmentationEnricher(max_duration_seconds=THRESHOLD, logger=logger)
+    enricher = SentenceSegmentationEnricher(
+        max_duration_seconds=THRESHOLD, logger=logger
+    )
 
     # Act
     with caplog.at_level(logging.WARNING):
