@@ -46,7 +46,7 @@ def test_translation_enricher_sliding_window_logic(mocker):
     # Act
     enriched = enricher.enrich(utterances, LanguageTag("de"))
 
-    # Assert: Verification of the Orchestration Policy! 🏛️⚖️
+    # Assert: Verification of the Orchestration Policy.
     assert len(enriched) == 10
 
     calls = mock_translator.translate.call_args_list

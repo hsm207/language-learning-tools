@@ -91,7 +91,7 @@ class LlamaCppTranslator(ITranslator):
         return process.stdout.decode("utf-8", errors="replace").strip()
 
     def _extract_field(self, raw_output: str, field_name: str) -> str:
-        """Surgically extracts a field from the first JSON block found in output. ✂️💎"""
+        """Extracts a field from the first JSON block found in output. ✂️💎"""
         # We slice between '{' and '}' because llama-cli often appends trailing artifacts
         # like ' [end of text]', metrics, or newlines that break direct json.loads() calls.
         json_start = raw_output.find("{")
@@ -110,7 +110,7 @@ class LlamaCppTranslator(ITranslator):
             return ""
 
     def _build_prompt(self, text: str, context: List[str] = None) -> str:
-        """Constructs a high-fidelity Llama 3.1 Instruct prompt with laser focus. 🏛️💎"""
+        """Constructs a high-fidelity Llama 3.1 Instruct prompt with high precision. 🏛️💎"""
         system_msg = (
             "You are a specialized translation engine. Your ONLY task is to translate the string labeled 'TARGET'. "
             "The 'CONTEXT' strings are for reference only—DO NOT translate them. "
