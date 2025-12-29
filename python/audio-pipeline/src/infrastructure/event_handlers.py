@@ -39,23 +39,23 @@ class LoggingEventHandler:
 
     def handle_audio_ingested(self, event: AudioIngested):
         tag = self._tag(event)
-        self.logger.info(f"{tag} 📦 Audio Ingested: {event.source_path}")
+        self.logger.info(f"{tag} 📦 Ingested source: {event.source_path}")
 
     def handle_speech_transcribed(self, event: SpeechTranscribed):
         tag = self._tag(event)
         self.logger.info(
-            f"{tag} 🎤 Finished: {event.utterance_count} segments found in {event.language}."
+            f"{tag} 🎤 Transcribed {event.utterance_count} segments in {event.language}."
         )
 
     def handle_speakers_identified(self, event: SpeakersIdentified):
         tag = self._tag(event)
         self.logger.info(
-            f"{tag} 🕵️‍♀️ Finished: {event.speaker_count} speaker turns identified."
+            f"{tag} 🕵️‍♀️ Identified {event.speaker_count} new speaker turns."
         )
 
     def handle_enrichment_started(self, event: EnrichmentStarted):
         tag = self._tag(event)
-        self.logger.info(f"{tag} ✨ Started: {event.enricher_name}")
+        self.logger.info(f"{tag} ✨ Starting enricher: {event.enricher_name}")
 
     def handle_step_timed(self, event: PipelineStepTimed):
         """Centralized timing log with origin context! ⏱️📈✅"""

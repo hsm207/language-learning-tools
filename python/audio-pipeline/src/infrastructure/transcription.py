@@ -48,7 +48,7 @@ class WhisperTranscriber(ITranscriber):
             "-sow",
         ]
 
-        self.logger.debug(f"Running Whisper command: {' '.join(command)}")
+        self.logger.debug(f"🚀 Spawning Whisper binary for local transcription...")
 
         try:
             result = subprocess.run(command, capture_output=True, text=True)
@@ -138,10 +138,6 @@ class AzureFastTranscriber(ITranscriber):
     def transcribe(
         self, audio: AudioArtifact, language: LanguageTag
     ) -> List[Utterance]:
-        self.logger.info(
-            f"🚀 Launching Azure Fast Transcription for {audio.file_path}..."
-        )
-
         definition = {
             "locales": [str(language)],
             "diarization": {"enabled": True},
@@ -204,7 +200,4 @@ class AzureFastTranscriber(ITranscriber):
                 )
             )
 
-        self.logger.info(
-            f"✅ Azure Transcription complete! Found {len(utterances)} phrases."
-        )
         return utterances

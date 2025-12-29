@@ -10,7 +10,7 @@ from src.domain.value_objects import LanguageTag
 
 class LlamaCppTranslator(ITranslator):
     """
-    Inference driver for llama.cpp using GBNF grammar bondage to ensure structured JSON output. 🦖⛓️💎
+    Inference driver for llama.cpp using GBNF grammars to ensure structured JSON output. 🦖⛓️💎
     """
 
     # Llama 3.1 Instruct Template Constants 🏛️
@@ -36,9 +36,6 @@ class LlamaCppTranslator(ITranslator):
         self.logger = logger
 
         self._verify_dependencies()
-        self.logger.info(
-            f"🦖 LlamaCppTranslator initialized with model: {os.path.basename(model_path)}"
-        )
 
     def translate(
         self,
@@ -60,7 +57,7 @@ class LlamaCppTranslator(ITranslator):
             raw_output = self._run_inference(prompt)
             return self._extract_field(raw_output, "translation")
         except Exception as e:
-            self.logger.error(f"❌ Translation failed: {str(e)}")
+            self.logger.error(f"❌ Local Llama translation failed: {str(e)}")
             return ""
 
     def _run_inference(self, prompt: str) -> str:
@@ -87,7 +84,8 @@ class LlamaCppTranslator(ITranslator):
             "--simple-io",  # Minimalist IO for cleaner stream capture
         ]
 
-        self.logger.debug(f"🚀 Spawning Llama-CLI for inference...")
+        # Internal Technical Log! 🕵️‍♀️🔬
+        self.logger.debug(f"🚀 Spawning Llama-CLI for local inference...")
         # Capture as bytes to avoid UTF-8 decoding crashes on weird LLM artifacts! 🧼🛡️
         process = subprocess.run(cmd, capture_output=True, text=False, check=True)
         return process.stdout.decode("utf-8", errors="replace").strip()
