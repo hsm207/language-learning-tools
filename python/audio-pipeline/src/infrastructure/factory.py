@@ -14,6 +14,7 @@ from src.infrastructure.transcription import WhisperTranscriber, AzureFastTransc
 from src.infrastructure.audio import FFmpegAudioProcessor
 from src.infrastructure.diarization import PyannoteDiarizer, NullDiarizer
 from src.infrastructure.llama_cpp_translation import LlamaCppTranslator
+from src.infrastructure.azure_inference_translation import AzureInferenceTranslator
 from src.application.services import MaxOverlapAlignmentService
 from src.application.enrichers.segmentation import SentenceSegmentationEnricher
 from src.application.enrichers.merging import TokenMergerEnricher
@@ -23,7 +24,7 @@ from src.application.enrichers.translation import TranslationEnricher
 class PipelineComponentFactory:
     """
     Composition Root Factory. 🏗️✨
-    Encapsulates the 'Construction Strategy' for different providers to keep the core OCP-compliant! 🛡️⚖️🏛️
+    Encapsulates the construction logic for different pipeline stacks to remain OCP-compliant.
     """
 
     def __init__(self, args, logger: ILogger):
@@ -63,8 +64,10 @@ class PipelineComponentFactory:
         )
         diarizer = PyannoteDiarizer(logger=self.logger)
 
-        enrichers = self._build_base_enrichers()
-        enrichers.insert(1, TokenMergerEnricher())  # Local needs token merging! 🧩
+        enrichers = self._build_enrichers()
+        enrichers.insert(
+            1, TokenMergerEnricher()
+        )  # Local needs token merging for Whisper word-level data. 🧩
 
         return audio_processor, transcriber, diarizer, alignment_service, enrichers
 
@@ -81,24 +84,24 @@ class PipelineComponentFactory:
         region = os.environ.get("AZURE_SPEECH_REGION")
 
         if not api_key or not region:
-            raise ValueError("❌ Missing AZURE_SPEECH_KEY or AZURE_SPEECH_REGION! ")
+            raise ValueError(
+                "❌ Missing AZURE_SPEECH_KEY or AZURE_SPEECH_REGION! "
+                "Cloud credentials are required for the Azure stack. 🛡️⚖️🏛️"
+            )
 
         transcriber = AzureFastTranscriber(
             api_key=api_key, region=region, logger=self.logger
         )
         diarizer = NullDiarizer(logger=self.logger)
 
-        enrichers = self._build_base_enrichers()  # Azure already provides words! 🧼
+        enrichers = (
+            self._build_enrichers()
+        )  # Azure already provides words, skipping TokenMerger. 🧼
 
         return audio_processor, transcriber, diarizer, alignment_service, enrichers
 
-    def _build_base_enrichers(self) -> List[IAudioEnricher]:
-        translator = LlamaCppTranslator(
-            model_path="models/llama-3.1-8b-instruct-q4_k_m.gguf",
-            executable_path="/home/user/Documents/GitHub/llama.cpp/build/bin/llama-cli",
-            grammar_path="src/infrastructure/grammars/translation.gbnf",
-            logger=self.logger,
-        )
+    def _build_enrichers(self) -> List[IAudioEnricher]:
+        translator = self._build_translator()
 
         return [
             SentenceSegmentationEnricher(
@@ -112,3 +115,34 @@ class PipelineComponentFactory:
                 logger=self.logger,
             ),
         ]
+
+    def _build_translator(self) -> ITranslator:
+        """Constructs the translation component based on configuration. 🌍💎"""
+        if self.args.use_azure:
+            self.logger.info("☁️ Building Azure AI Foundry Translator.")
+            key = os.environ.get("AZURE_AI_INFERENCE_KEY")
+            endpoint = os.environ.get("AZURE_AI_INFERENCE_ENDPOINT")
+            if not key or not endpoint:
+                raise ValueError(
+                    "❌ Missing AZURE_AI_INFERENCE_KEY or AZURE_AI_INFERENCE_ENDPOINT! "
+                    "Foundry credentials are required for the Azure stack. 🛡️⚖️🏛️"
+                )
+
+            if "/chat/completions" not in endpoint or "api-version=" not in endpoint:
+                raise ValueError(
+                    f"❌ Invalid AZURE_AI_INFERENCE_ENDPOINT: '{endpoint}'\n"
+                    "Endpoint must be a full functional URL including '/chat/completions' and API version. 🛡️⚖️🏛️"
+                )
+
+            return AzureInferenceTranslator(
+                api_key=key, endpoint=endpoint, logger=self.logger
+            )
+
+        # All-Local Mode
+        self.logger.info("🏠 Building Local LlamaCpp Translator.")
+        return LlamaCppTranslator(
+            model_path="models/llama-3.1-8b-instruct-q4_k_m.gguf",
+            executable_path="/home/user/Documents/GitHub/llama.cpp/build/bin/llama-cli",
+            grammar_path="src/infrastructure/grammars/translation.gbnf",
+            logger=self.logger,
+        )

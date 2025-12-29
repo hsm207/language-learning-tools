@@ -46,9 +46,15 @@ def test_factory_builds_azure_stack(mocker):
     logger = NullLogger()
     factory = PipelineComponentFactory(args, logger)
 
-    # Mock credentials to avoid ValueError! 🔑
+    # Mock ALL mandatory credentials! 🔑
     mocker.patch.dict(
-        "os.environ", {"AZURE_SPEECH_KEY": "fake", "AZURE_SPEECH_REGION": "eastus2"}
+        "os.environ",
+        {
+            "AZURE_SPEECH_KEY": "fake",
+            "AZURE_SPEECH_REGION": "eastus2",
+            "AZURE_AI_INFERENCE_KEY": "fake",
+            "AZURE_AI_INFERENCE_ENDPOINT": "https://fake.models.ai.azure.com/chat/completions?api-version=2024-05-01-preview",
+        },
     )
 
     _, transcriber, diarizer, _, enrichers = factory.build_components()

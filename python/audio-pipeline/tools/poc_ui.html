@@ -337,7 +337,7 @@
                         <button class="control-btn" id="loop-${idx}">🔄 Loop</button>
                     </div>
                     <div class="speaker-label">
-                        ${u.speaker_id}<br>
+                        ${u.speaker || 'Unknown'}<br>
                         <small style="color:#b2bec3">${u.start.toFixed(2)} - ${u.end.toFixed(2)}s</small>
                     </div>
                     <div class="content">

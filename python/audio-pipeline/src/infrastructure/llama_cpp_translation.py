@@ -10,7 +10,7 @@ from src.domain.value_objects import LanguageTag
 
 class LlamaCppTranslator(ITranslator):
     """
-    Inference driver for llama.cpp using GBNF grammar bondage to ensure structured JSON output. 🦖⛓️💎
+    Inference driver for llama.cpp using GBNF grammars to ensure structured JSON output. 🦖⛓️💎
     """
 
     # Llama 3.1 Instruct Template Constants 🏛️
@@ -36,9 +36,6 @@ class LlamaCppTranslator(ITranslator):
         self.logger = logger
 
         self._verify_dependencies()
-        self.logger.info(
-            f"🦖 LlamaCppTranslator initialized with model: {os.path.basename(model_path)}"
-        )
 
     def translate(
         self,
@@ -60,7 +57,7 @@ class LlamaCppTranslator(ITranslator):
             raw_output = self._run_inference(prompt)
             return self._extract_field(raw_output, "translation")
         except Exception as e:
-            self.logger.error(f"❌ Translation failed: {str(e)}")
+            self.logger.error(f"❌ Local Llama translation failed: {str(e)}")
             return ""
 
     def _run_inference(self, prompt: str) -> str:
@@ -87,13 +84,14 @@ class LlamaCppTranslator(ITranslator):
             "--simple-io",  # Minimalist IO for cleaner stream capture
         ]
 
-        self.logger.debug(f"🚀 Spawning Llama-CLI for inference...")
+        # Internal Technical Log! 🕵️‍♀️🔬
+        self.logger.debug(f"🚀 Spawning Llama-CLI for local inference...")
         # Capture as bytes to avoid UTF-8 decoding crashes on weird LLM artifacts! 🧼🛡️
         process = subprocess.run(cmd, capture_output=True, text=False, check=True)
         return process.stdout.decode("utf-8", errors="replace").strip()
 
     def _extract_field(self, raw_output: str, field_name: str) -> str:
-        """Surgically extracts a field from the first JSON block found in output. ✂️💎"""
+        """Extracts a field from the first JSON block found in output. ✂️💎"""
         # We slice between '{' and '}' because llama-cli often appends trailing artifacts
         # like ' [end of text]', metrics, or newlines that break direct json.loads() calls.
         json_start = raw_output.find("{")
@@ -112,7 +110,7 @@ class LlamaCppTranslator(ITranslator):
             return ""
 
     def _build_prompt(self, text: str, context: List[str] = None) -> str:
-        """Constructs a high-fidelity Llama 3.1 Instruct prompt with laser focus. 🏛️💎"""
+        """Constructs a high-fidelity Llama 3.1 Instruct prompt with high precision. 🏛️💎"""
         system_msg = (
             "You are a specialized translation engine. Your ONLY task is to translate the string labeled 'TARGET'. "
             "The 'CONTEXT' strings are for reference only—DO NOT translate them. "
