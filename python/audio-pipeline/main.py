@@ -10,6 +10,7 @@ from src.infrastructure.event_handlers import LoggingEventHandler
 from src.infrastructure.factory import PipelineComponentFactory
 from src.domain.entities import JobStatus
 from src.domain.value_objects import LanguageTag
+import logging
 
 
 def main():
@@ -50,7 +51,7 @@ def main():
     parser.add_argument(
         "--use-azure",
         action="store_true",
-        help="Use Azure Fast Transcription instead of local Whisper/Pyannote. ☁️🏎️💨",
+        help="Use full Azure cloud-native pipeline (Transcription & Foundry Translation). ☁️🏎️💨",
     )
 
     args = parser.parse_args()
@@ -62,7 +63,9 @@ def main():
 
     # 🏛️ Composition Root Factory Setup
     log_file_path = os.path.join(args.output_dir, "pipeline.log")
-    logger = StandardLogger(name="Pipeline", log_file=log_file_path)
+    logger = StandardLogger(
+        name="Pipeline", log_file=log_file_path, level=logging.DEBUG
+    )
 
     # ⚡️ Reactive Event Bus Setup
     event_bus = InProcessEventBus()

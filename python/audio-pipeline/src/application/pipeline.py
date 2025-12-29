@@ -127,6 +127,7 @@ class AudioProcessingPipeline:
         finally:
             duration = time.time() - start_time
             job.record_step_duration(step_name, duration)
+            self._flush_events(job)
 
     def _format_duration(self, seconds: float) -> str:
         """Converts raw seconds into a beautiful, human-readable string! 🎀✨"""
