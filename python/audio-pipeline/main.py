@@ -39,14 +39,14 @@ def main():
     parser.add_argument(
         "--translation-context",
         type=int,
-        default=3,
+        default=10,
         help="Number of preceding utterances to provide as context for translation",
     )
     parser.add_argument(
         "--translation-batch",
         type=int,
         default=1,
-        help="Number of utterances to translate in a single block (currently 1 for best accuracy)",
+        help="Number of utterances to translate in a single block (Must be 1 to ensure 1:1 alignment and prevent LLM merging)",
     )
     parser.add_argument(
         "--use-azure",
