@@ -6,3 +6,18 @@ models/*.gguf
 .playwright-mcp/
 !tests/data/speaker_verification.json
 !tests/data/test_30s_raw.json
+
+# Python 🐍
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.venv/
+env/
+venv/
+ENV/
+
+# Logs and Temps 📝
+*.log
+*.tmp
+temp/
