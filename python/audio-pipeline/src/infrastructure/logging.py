@@ -23,13 +23,15 @@ class StandardLogger(ILogger):
 
             # Console Handler
             console_handler = logging.StreamHandler()
+            console_handler.setLevel(logging.INFO) # Only INFO and above to console
             console_handler.setFormatter(formatter)
             self.logger.addHandler(console_handler)
 
             # File Handler
             if log_file:
                 os.makedirs(os.path.dirname(log_file), exist_ok=True)
-                file_handler = logging.FileHandler(log_file)
+                file_handler = logging.FileHandler(log_file, mode='w') # Changed mode to 'w' for overwrite
+                file_handler.setLevel(level) # Keep original level for file
                 file_handler.setFormatter(formatter)
                 self.logger.addHandler(file_handler)
 
