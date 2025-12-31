@@ -19,6 +19,8 @@ from src.application.services import MaxOverlapAlignmentService
 from src.application.enrichers.segmentation import SentenceSegmentationEnricher
 from src.application.enrichers.merging import TokenMergerEnricher
 from src.application.enrichers.translation import TranslationEnricher
+from src.application.enrichers.annotation import LinguisticAnnotationEnricher
+from src.infrastructure.azure_inference_annotation import AzureInferenceAnnotationService
 
 
 class PipelineComponentFactory:
@@ -103,7 +105,7 @@ class PipelineComponentFactory:
     def _build_enrichers(self) -> List[IAudioEnricher]:
         translator = self._build_translator()
 
-        return [
+        enrichers: List[IAudioEnricher] = [
             SentenceSegmentationEnricher(
                 max_duration_seconds=self.args.max_duration, logger=self.logger
             ),
@@ -115,6 +117,20 @@ class PipelineComponentFactory:
                 logger=self.logger,
             ),
         ]
+
+        # 🎓 Pedagogical Layer: Add linguistic annotation if in Azure mode! 💎✨
+        if self.args.use_azure:
+            annotation_service = self._build_annotation_service()
+            enrichers.append(
+                LinguisticAnnotationEnricher(
+                    annotation_service=annotation_service,
+                    batch_size=self.args.annotation_batch,
+                    context_size=self.args.annotation_context,
+                    logger=self.logger,
+                )
+            )
+
+        return enrichers
 
     def _build_translator(self) -> ITranslator:
         """Constructs the translation component based on configuration. 🌍💎"""
@@ -145,4 +161,12 @@ class PipelineComponentFactory:
             executable_path="/home/user/Documents/GitHub/llama.cpp/build/bin/llama-cli",
             grammar_path="src/infrastructure/grammars/translation.gbnf",
             logger=self.logger,
+        )
+
+    def _build_annotation_service(self) -> AzureInferenceAnnotationService:
+        """Constructs the linguistic annotation service. 👩‍🏫🎓✨"""
+        key = os.environ.get("AZURE_AI_INFERENCE_KEY")
+        endpoint = os.environ.get("AZURE_AI_INFERENCE_ENDPOINT")
+        return AzureInferenceAnnotationService(
+            api_key=key, endpoint=endpoint, logger=self.logger
         )

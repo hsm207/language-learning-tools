@@ -3,14 +3,14 @@ import time
 from typing import Any, Dict, List, Optional
 import httpx
 
-from src.domain.interfaces import ILogger, ITranslator
+from src.domain.interfaces import ILogger, ILinguisticAnnotationService
 from src.domain.value_objects import LanguageTag
 from src.infrastructure.logging import NullLogger
-from src.infrastructure.azure_inference_translation_mapper import AzureInferenceTranslationMapper
+from src.infrastructure.azure_inference_annotation_mapper import AzureInferenceAnnotationMapper
 
-class AzureInferenceTranslator(ITranslator):
+class AzureInferenceAnnotationService(ILinguisticAnnotationService):
     """
-    Azure AI Inference implementation for text translation.
+    Azure AI Inference implementation for linguistic annotation.
     Humble Object: Handles network concerns and retries. 📡🛡️✨
     """
 
@@ -19,24 +19,24 @@ class AzureInferenceTranslator(ITranslator):
         endpoint: str,
         api_key: str,
         logger: ILogger = NullLogger(),
-        mapper: Optional[AzureInferenceTranslationMapper] = None
+        mapper: Optional[AzureInferenceAnnotationMapper] = None
     ):
         self.endpoint = endpoint
         self.api_key = api_key
         self.logger = logger
-        self.mapper = mapper or AzureInferenceTranslationMapper()
+        self.mapper = mapper or AzureInferenceAnnotationMapper()
         self.model_name = self.mapper.extract_model_name(endpoint)
 
-    def translate(
+    def annotate(
         self,
         texts: List[str],
-        target_lang: LanguageTag,
+        language: LanguageTag,
         context: Optional[List[str]] = None,
-    ) -> List[str]:
+    ) -> List[Optional[str]]:
         if not texts:
             return []
 
-        payload = self.mapper.prepare_payload(texts, target_lang, self.model_name, context)
+        payload = self.mapper.prepare_payload(texts, language, self.model_name, context)
         headers = {
             "Content-Type": "application/json",
             "api-key": self.api_key,
@@ -49,7 +49,7 @@ class AzureInferenceTranslator(ITranslator):
         num_texts: int,
         payload: Dict[str, Any],
         headers: Dict[str, Any],
-    ) -> List[str]:
+    ) -> List[Optional[str]]:
         max_retries = 3
         base_delay = 65.0
 
@@ -64,8 +64,8 @@ class AzureInferenceTranslator(ITranslator):
                     return self.mapper.parse_response(num_texts, response.json())
             except Exception as e:
                 if attempt == max_retries - 1:
-                    self.logger.error(f"Translation failed: {e}")
+                    self.logger.error(f"Annotation failed: {e}")
                     break
                 time.sleep(base_delay * (2**attempt))
 
-        return [""] * num_texts
+        return [None] * num_texts

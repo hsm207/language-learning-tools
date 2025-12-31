@@ -38,6 +38,7 @@ class Utterance:
     confidence: ConfidenceScore
     words: List[Word] = field(default_factory=list)
     translated_text: Optional[str] = None
+    learner_notes: Optional[str] = None
 
     def __post_init__(self):
         for word in self.words:

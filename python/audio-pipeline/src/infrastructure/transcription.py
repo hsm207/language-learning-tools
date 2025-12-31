@@ -163,6 +163,18 @@ class AzureFastTranscriber(ITranscriber):
             raise RuntimeError(error_msg)
 
         data = response.json()
+
+        # 🏛️ Enshrine the raw response as an intermediary artifact for forensic analysis! 💎✨
+        raw_output_path = audio.file_path.rsplit(".", 1)[0] + ".azure.json"
+        try:
+            with open(raw_output_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
+            self.logger.info(
+                f"💾 Saved raw Azure transcription artifact to {raw_output_path} 🕵️‍♀️🔬"
+            )
+        except Exception as e:
+            self.logger.warning(f"⚠️ Failed to save raw Azure artifact: {e}")
+
         return self._map_to_utterances(data)
 
     def _map_to_utterances(self, data: dict) -> List[Utterance]:

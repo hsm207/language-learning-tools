@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import pytest
 from src.infrastructure.factory import PipelineComponentFactory
 from src.infrastructure.logging import NullLogger
@@ -6,20 +7,19 @@ from src.infrastructure.diarization import PyannoteDiarizer, NullDiarizer
 from src.application.enrichers.merging import TokenMergerEnricher
 
 
+@dataclass
 class MockArgs:
-    def __init__(
-        self,
-        use_azure=False,
-        max_duration=15.0,
-        target_language="en",
-        translation_context=3,
-        translation_batch=1,
-    ):
-        self.use_azure = use_azure
-        self.max_duration = max_duration
-        self.target_language = target_language
-        self.translation_context = translation_context
-        self.translation_batch = translation_batch
+    input: str = "test.mp3"
+    output_dir: str = "./output"
+    language: str = "de-DE"
+    target_language: str = "en"
+    num_speakers: int = 2
+    max_duration: float = 15.0
+    translation_context: int = 3
+    translation_batch: int = 10
+    annotation_context: int = 10
+    annotation_batch: int = 1
+    use_azure: bool = False
 
 
 def test_factory_builds_local_stack(mocker):

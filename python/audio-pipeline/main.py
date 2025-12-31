@@ -49,6 +49,18 @@ def main():
         help="Number of utterances to translate in a single block (Must be 1 to ensure 1:1 alignment and prevent LLM merging)",
     )
     parser.add_argument(
+        "--annotation-context",
+        type=int,
+        default=10,
+        help="Number of surrounding utterances to provide as context for pedagogical annotation",
+    )
+    parser.add_argument(
+        "--annotation-batch",
+        type=int,
+        default=1,
+        help="Number of utterances to annotate in a single block",
+    )
+    parser.add_argument(
         "--use-azure",
         action="store_true",
         help="Use full Azure cloud-native pipeline (Transcription & Foundry Translation). ☁️🏎️💨",

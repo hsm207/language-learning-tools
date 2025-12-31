@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Callable, Type, TypeVar, Any
+from typing import List, Callable, Type, TypeVar, Any, Optional
 from src.domain.value_objects import (
     Utterance,
     LanguageTag,
@@ -85,6 +85,20 @@ class ITranslator(ABC):
         target_lang: LanguageTag,
         context: List[str] = None,
     ) -> List[str]:
+        pass
+
+
+class ILinguisticAnnotationService(ABC):
+    """Contract for identifying linguistic artifacts (grammar slips, repetitions, abbreviations). 🎓💎✨"""
+
+    @abstractmethod
+    def annotate(
+        self,
+        texts: List[str],
+        language: LanguageTag,
+        context: List[str] = None,
+    ) -> List[Optional[str]]:
+        """Returns a list of notes for each input text, or None if no note is needed. 📝"""
         pass
 
 

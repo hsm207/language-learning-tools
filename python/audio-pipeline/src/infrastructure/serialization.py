@@ -31,6 +31,7 @@ class JsonTranscriptSerializer(ITranscriptSerializer):
             "speaker": u.speaker_id,
             "text": u.text,
             "translated_text": u.translated_text,
+            "learner_notes": u.learner_notes,
             "confidence": float(u.confidence),
             "words": [self._word_to_dict(w) for w in u.words],
         }
