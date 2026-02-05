@@ -8,6 +8,7 @@ from src.application.pipeline import AudioProcessingPipeline
 from src.infrastructure.bus import InProcessEventBus
 from src.infrastructure.event_handlers import LoggingEventHandler
 from src.infrastructure.factory import PipelineComponentFactory
+from src.application.services import DomainTelemetryService
 from src.domain.entities import JobStatus
 from src.domain.value_objects import LanguageTag
 import logging
@@ -83,6 +84,8 @@ def main():
     event_bus = InProcessEventBus()
     LoggingEventHandler(logger=logger, bus=event_bus)
 
+    telemetry_service = DomainTelemetryService(event_bus=event_bus)
+
     # 🏗️ Build Components using Factory
     factory = PipelineComponentFactory(args, logger)
     (
@@ -102,6 +105,7 @@ def main():
         diarizer=diarizer,
         alignment_service=alignment_service,
         event_bus=event_bus,
+        telemetry_service=telemetry_service,
         logger=logger,
         enrichers=enrichers,
     )

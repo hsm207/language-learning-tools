@@ -1,6 +1,32 @@
-from typing import List
-from src.domain.interfaces import IAlignmentService
+import time
+from typing import List, Generator
+from uuid import UUID
+from contextlib import contextmanager
+from src.domain.interfaces import IAlignmentService, ITelemetryService, IEventPublisher
 from src.domain.value_objects import Utterance
+from src.domain.events import PipelineStepTimed
+
+
+class DomainTelemetryService(ITelemetryService):
+    """
+    Application service for measuring and recording component durations. ⏱️📈✨
+    """
+
+    def __init__(self, event_bus: IEventPublisher):
+        self.event_bus = event_bus
+
+    @contextmanager
+    def timed_step(self, job_id: UUID, step_name: str) -> Generator[None, None, None]:
+        start_time = time.time()
+        try:
+            yield
+        finally:
+            duration = time.time() - start_time
+            self.event_bus.publish(
+                PipelineStepTimed(
+                    job_id=job_id, step_name=step_name, duration_seconds=duration
+                )
+            )
 
 
 class MaxOverlapAlignmentService(IAlignmentService):

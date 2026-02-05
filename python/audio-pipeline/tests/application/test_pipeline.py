@@ -8,6 +8,7 @@ from src.domain.interfaces import (
     ILogger,
     IAlignmentService,
     IEventPublisher,
+    ITelemetryService,
 )
 from src.domain.entities import JobStatus
 
@@ -23,13 +24,17 @@ def test_pipeline_execution_flow(mocker):
     mock_alignment_service.align.return_value = []
     mock_event_bus = mocker.Mock(spec=IEventPublisher)
 
+    mock_telemetry = mocker.MagicMock(spec=ITelemetryService)
+
     pipeline = AudioProcessingPipeline(
         audio_processor=mock_audio_processor,
         transcriber=mock_transcriber,
         diarizer=mock_diarizer,
         alignment_service=mock_alignment_service,
         event_bus=mock_event_bus,
+        telemetry_service=mock_telemetry,
         logger=mocker.Mock(spec=ILogger),
+        enrichers=None,
     )
 
     # We mock the system boundary sanity check! 🛡️⚖️
@@ -53,12 +58,15 @@ def test_pipeline_failure_handles_exceptions(mocker):
     processor.normalize.side_effect = Exception("Boom! 💥")
     mock_event_bus = mocker.Mock(spec=IEventPublisher)
 
+    mock_telemetry = mocker.MagicMock(spec=ITelemetryService)
+
     pipeline = AudioProcessingPipeline(
         audio_processor=processor,
         transcriber=mocker.Mock(),
         diarizer=mocker.Mock(),
         alignment_service=mocker.Mock(),
         event_bus=mock_event_bus,
+        telemetry_service=mock_telemetry,
         logger=mocker.Mock(),
     )
 
@@ -79,6 +87,7 @@ def test_pipeline_fails_on_missing_language(mocker):
         diarizer=mocker.Mock(),
         alignment_service=mocker.Mock(),
         event_bus=mocker.Mock(),
+        telemetry_service=mocker.Mock(),
         logger=mocker.Mock(),
     )
 

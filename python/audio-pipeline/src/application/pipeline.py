@@ -11,6 +11,7 @@ from src.domain.interfaces import (
     ILogger,
     IAlignmentService,
     IEventPublisher,
+    ITelemetryService,
 )
 from src.domain.entities import ProcessingJob, JobStatus
 from src.domain.value_objects import LanguageTag, DiarizationOptions, AudioTranscript
@@ -33,6 +34,7 @@ class AudioProcessingPipeline:
         diarizer: IDiarizer,
         alignment_service: IAlignmentService,
         event_bus: IEventPublisher,
+        telemetry_service: ITelemetryService,
         logger: ILogger,
         enrichers: List[IAudioEnricher] = None,
     ):
@@ -41,6 +43,7 @@ class AudioProcessingPipeline:
         self.diarizer = diarizer
         self.alignment_service = alignment_service
         self.event_bus = event_bus
+        self.telemetry_service = telemetry_service
         self.logger = logger
         self.enrichers = enrichers or []
 
@@ -62,14 +65,14 @@ class AudioProcessingPipeline:
         total_start_time = time.time()
 
         try:
-            with self._timed_step(job, "📦 Ingestion & Normalization"):
+            with self.telemetry_service.timed_step(job.id, "📦 Ingestion & Normalization"):
                 job.mark_ingested()
                 self.event_bus.publish(
                     AudioIngested(job_id=job.id, source_path=job.source_path)
                 )
                 artifact = self.audio_processor.normalize(source_path)
 
-            with self._timed_step(job, f"🎤 Transcription ({language})"):
+            with self.telemetry_service.timed_step(job.id, f"🎤 Transcription ({language})"):
                 job.mark_transcribing()
                 raw_utterances = (
                     self.transcriber.transcribe(artifact, job.target_language) or []
@@ -82,7 +85,7 @@ class AudioProcessingPipeline:
                     )
                 )
 
-            with self._timed_step(job, "🕵️‍♀️ Diarization"):
+            with self.telemetry_service.timed_step(job.id, "🕵️‍♀️ Diarization"):
                 job.mark_diarizing()
                 diarized_segments = (
                     self.diarizer.diarize(artifact, options=diarization_options) or []
@@ -91,7 +94,7 @@ class AudioProcessingPipeline:
                     SpeakersIdentified(job_id=job.id, speaker_count=len(diarized_segments))
                 )
 
-            with self._timed_step(job, "🧩 Alignment"):
+            with self.telemetry_service.timed_step(job.id, "🧩 Alignment"):
                 final_utterances = self.alignment_service.align(
                     raw_utterances, diarized_segments
                 )
@@ -103,7 +106,7 @@ class AudioProcessingPipeline:
                         if hasattr(enricher, "__class__")
                         else f"Enricher #{i+1}"
                     )
-                    with self._timed_step(job, f"✨ Enrichment: {enricher_name}"):
+                    with self.telemetry_service.timed_step(job.id, f"✨ Enrichment: {enricher_name}"):
                         job.mark_enriching()
                         self.event_bus.publish(
                             EnrichmentStarted(job_id=job.id, enricher_name=enricher_name)
@@ -119,7 +122,7 @@ class AudioProcessingPipeline:
 
             total_duration = time.time() - total_start_time
             self.logger.info(
-                f"⏱️ Total processing time: {self._format_duration(total_duration)}"
+                f"⏱️ Total processing duration: {total_duration:.2f}s"
             )
 
         except Exception as e:
@@ -128,33 +131,3 @@ class AudioProcessingPipeline:
 
         return job
 
-    @contextmanager
-    def _timed_step(
-        self, job: ProcessingJob, step_name: str
-    ) -> Generator[None, None, None]:
-        """A context manager to record component duration as a domain event. ⏳✨"""
-        start_time = time.time()
-        try:
-            yield
-        finally:
-            duration = time.time() - start_time
-            self.event_bus.publish(
-                PipelineStepTimed(
-                    job_id=job.id, step_name=step_name, duration_seconds=duration
-                )
-            )
-
-    def _format_duration(self, seconds: float) -> str:
-        """Converts raw seconds into a beautiful, human-readable string."""
-        hrs = int(seconds // 3600)
-        mins = int((seconds % 3600) // 60)
-        secs = int(seconds % 60)
-        ms = int((seconds * 1000) % 1000)
-
-        if hrs > 0:
-            return f"{hrs}h {mins}m {secs}s"
-        if mins > 0:
-            return f"{mins}m {secs}s"
-        if secs > 0:
-            return f"{secs}.{ms:03d}s"
-        return f"{ms}ms"

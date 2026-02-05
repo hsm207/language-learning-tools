@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import List, Callable, Type, TypeVar, Any, Optional
+from typing import List, Callable, Type, TypeVar, Any, Optional, Generator
+from contextlib import contextmanager
+from uuid import UUID
 from src.domain.value_objects import (
     Utterance,
     LanguageTag,
@@ -105,6 +107,15 @@ class ILinguisticAnnotationService(ABC):
         context: List[str] = None,
     ) -> List[Optional[str]]:
         """Returns a list of notes for each input text, or None if no note is needed. 📝"""
+        pass
+
+
+class ITelemetryService(ABC):
+    """Contract for recording component performance metrics. ⏱️📈✨"""
+
+    @abstractmethod
+    @contextmanager
+    def timed_step(self, job_id: UUID, step_name: str) -> Generator[None, None, None]:
         pass
 
 
