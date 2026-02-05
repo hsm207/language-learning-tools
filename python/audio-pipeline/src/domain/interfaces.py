@@ -118,6 +118,10 @@ class ITelemetryService(ABC):
     def timed_step(self, job_id: UUID, step_name: str) -> Generator[None, None, None]:
         pass
 
+    @abstractmethod
+    def record_total_duration(self, duration: float):
+        pass
+
 
 class ILogger(ABC):
     @abstractmethod

@@ -28,6 +28,11 @@ class DomainTelemetryService(ITelemetryService):
                 )
             )
 
+    def record_total_duration(self, duration: float):
+        """Logs the total duration of the pipeline execution. ⏱️📈✨"""
+        print(f"⏱️ Total processing duration: {duration:.2f}s")
+
+
 
 class MaxOverlapAlignmentService(IAlignmentService):
     def align(

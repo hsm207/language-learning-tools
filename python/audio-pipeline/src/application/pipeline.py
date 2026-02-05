@@ -121,9 +121,7 @@ class AudioProcessingPipeline:
             )
 
             total_duration = time.time() - total_start_time
-            self.logger.info(
-                f"⏱️ Total processing duration: {total_duration:.2f}s"
-            )
+            self.telemetry_service.record_total_duration(total_duration)
 
         except Exception as e:
             job.fail(str(e))
