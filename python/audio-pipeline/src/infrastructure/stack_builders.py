@@ -167,3 +167,10 @@ class AzureStackBuilder(IStackBuilder):
         )
 
         return audio_processor, transcriber, diarizer, alignment_service, enrichers
+
+
+# --- Registry Pattern --- 🏗️✨
+BUILDER_REGISTRY = {
+    "local": LocalStackBuilder,
+    "azure": AzureStackBuilder,
+}

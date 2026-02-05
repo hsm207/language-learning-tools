@@ -10,7 +10,7 @@ from src.domain.interfaces import (
     ITranslator,
 )
 from src.domain.value_objects import LanguageTag
-from src.infrastructure.stack_builders import LocalStackBuilder, AzureStackBuilder
+from src.infrastructure.stack_builders import BUILDER_REGISTRY
 
 
 class PipelineComponentFactory:
@@ -32,10 +32,12 @@ class PipelineComponentFactory:
         IAlignmentService,
         List[IAudioEnricher],
     ]:
-        if self.args.use_azure:
-            builder = AzureStackBuilder()
-        else:
-            builder = LocalStackBuilder()
+        stack_key = "azure" if self.args.use_azure else "local"
+        builder_class = BUILDER_REGISTRY.get(stack_key)
 
+        if not builder_class:
+            raise ValueError(f"❌ Unknown stack type: '{stack_key}'! 🛡️⚖️🏛️")
+
+        builder = builder_class()
         return builder.build(self.args, self.logger)
 
