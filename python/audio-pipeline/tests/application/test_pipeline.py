@@ -7,7 +7,7 @@ from src.domain.interfaces import (
     IAudioProcessor,
     ILogger,
     IAlignmentService,
-    IEventBus,
+    IEventPublisher,
 )
 from src.domain.entities import JobStatus
 
@@ -21,7 +21,7 @@ def test_pipeline_execution_flow(mocker):
     mock_diarizer.diarize.return_value = []
     mock_alignment_service = mocker.Mock(spec=IAlignmentService)
     mock_alignment_service.align.return_value = []
-    mock_event_bus = mocker.Mock(spec=IEventBus)
+    mock_event_bus = mocker.Mock(spec=IEventPublisher)
 
     pipeline = AudioProcessingPipeline(
         audio_processor=mock_audio_processor,
@@ -51,7 +51,7 @@ def test_pipeline_execution_flow(mocker):
 def test_pipeline_failure_handles_exceptions(mocker):
     processor = mocker.Mock(spec=IAudioProcessor)
     processor.normalize.side_effect = Exception("Boom! 💥")
-    mock_event_bus = mocker.Mock(spec=IEventBus)
+    mock_event_bus = mocker.Mock(spec=IEventPublisher)
 
     pipeline = AudioProcessingPipeline(
         audio_processor=processor,

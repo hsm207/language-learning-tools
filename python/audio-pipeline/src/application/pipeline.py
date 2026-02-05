@@ -10,7 +10,7 @@ from src.domain.interfaces import (
     IAudioEnricher,
     ILogger,
     IAlignmentService,
-    IEventBus,
+    IEventPublisher,
 )
 from src.domain.entities import ProcessingJob, JobStatus
 from src.domain.value_objects import LanguageTag, DiarizationOptions, AudioTranscript
@@ -23,7 +23,7 @@ class AudioProcessingPipeline:
         transcriber: ITranscriber,
         diarizer: IDiarizer,
         alignment_service: IAlignmentService,
-        event_bus: IEventBus,
+        event_bus: IEventPublisher,
         logger: ILogger,
         enrichers: List[IAudioEnricher] = None,
     ):

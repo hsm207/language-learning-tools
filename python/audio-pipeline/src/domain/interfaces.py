@@ -12,14 +12,20 @@ from src.domain.events import DomainEvent
 T = TypeVar("T", bound=DomainEvent)
 
 
-class IEventBus(ABC):
+class IEventPublisher(ABC):
     @abstractmethod
     def publish(self, event: DomainEvent):
         pass
 
+
+class IEventSubscriber(ABC):
     @abstractmethod
     def subscribe(self, event_type: Type[T], handler: Callable[[T], Any]):
         pass
+
+
+class IEventBus(IEventPublisher, IEventSubscriber):
+    pass
 
 
 class IResultRepository(ABC):
