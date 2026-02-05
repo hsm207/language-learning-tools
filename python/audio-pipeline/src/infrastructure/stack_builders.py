@@ -19,7 +19,6 @@ from src.infrastructure.llama_cpp_translation import LlamaCppTranslator
 from src.infrastructure.azure_inference_translation import AzureInferenceTranslator
 from src.application.services import MaxOverlapAlignmentService
 from src.application.enrichers.segmentation import SentenceSegmentationEnricher
-from src.application.enrichers.merging import TokenMergerEnricher
 from src.application.enrichers.translation import TranslationEnricher
 from src.application.enrichers.annotation import LinguisticAnnotationEnricher
 from src.infrastructure.azure_inference_annotation import AzureInferenceAnnotationService
@@ -77,7 +76,6 @@ class LocalStackBuilder(IStackBuilder):
             SentenceSegmentationEnricher(
                 max_duration_seconds=args.max_duration, logger=logger
             ),
-            TokenMergerEnricher(),  # Local needs token merging 🧩
             TranslationEnricher(
                 translator=translator,
                 target_lang=LanguageTag(args.target_language),

@@ -4,7 +4,6 @@ from src.infrastructure.factory import PipelineComponentFactory
 from src.infrastructure.logging import NullLogger
 from src.infrastructure.transcription import WhisperTranscriber, AzureFastTranscriber
 from src.infrastructure.diarization import PyannoteDiarizer, NullDiarizer
-from src.application.enrichers.merging import TokenMergerEnricher
 
 
 @dataclass
@@ -36,8 +35,6 @@ def test_factory_builds_local_stack(mocker):
 
     assert isinstance(transcriber, WhisperTranscriber)
     assert isinstance(diarizer, PyannoteDiarizer)
-    # Check if TokenMergerEnricher is present in the local stack! 🧩
-    assert any(isinstance(e, TokenMergerEnricher) for e in enrichers)
 
 
 def test_factory_builds_azure_stack(mocker):
@@ -61,5 +58,4 @@ def test_factory_builds_azure_stack(mocker):
 
     assert isinstance(transcriber, AzureFastTranscriber)
     assert isinstance(diarizer, NullDiarizer)
-    # Check if TokenMergerEnricher is ABSENT in the Azure stack! 🧼🚿
-    assert not any(isinstance(e, TokenMergerEnricher) for e in enrichers)
+

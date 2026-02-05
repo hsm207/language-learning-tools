@@ -18,7 +18,6 @@ from src.infrastructure.repositories import FileSystemResultRepository
 from src.application.pipeline import AudioProcessingPipeline
 from src.application.services import MaxOverlapAlignmentService
 from src.application.enrichers.segmentation import SentenceSegmentationEnricher
-from src.application.enrichers.merging import TokenMergerEnricher
 from src.application.enrichers.translation import TranslationEnricher
 from src.domain.entities import JobStatus
 from src.domain.value_objects import LanguageTag
@@ -54,7 +53,6 @@ def test_pipeline_end_to_end_real_components(caplog):
     # Use production enrichment chain 🧩✨
     enrichers = [
         SentenceSegmentationEnricher(max_duration_seconds=3.0, logger=logger),
-        TokenMergerEnricher(),
         TranslationEnricher(
             translator=translator,
             target_lang=LanguageTag("en"),

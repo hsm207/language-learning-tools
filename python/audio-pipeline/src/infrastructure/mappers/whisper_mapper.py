@@ -50,15 +50,39 @@ class WhisperOutputMapper:
             if not words:
                 continue
 
+            # Merge tokens into words 🧼🧩
+            merged_words = []
+            for token in words:
+                if merged_words and not token.text.startswith(" "):
+                    last_w = merged_words[-1]
+                    new_text = last_w.text + token.text.strip()
+                    new_end = token.timestamp.end
+                    new_conf = (float(last_w.confidence) + float(token.confidence)) / 2
+
+                    merged_words[-1] = Word(
+                        text=new_text,
+                        timestamp=TimestampRange(last_w.timestamp.start, new_end),
+                        confidence=ConfidenceScore(new_conf),
+                    )
+                else:
+                    merged_words.append(
+                        Word(
+                            text=token.text.strip(),
+                            timestamp=token.timestamp,
+                            confidence=token.confidence,
+                        )
+                    )
+
+            # Return the segment as an Utterance bounded by its merged words! 📏🎯
             utterances.append(
                 Utterance(
                     timestamp=TimestampRange(
-                        start=words[0].timestamp.start, end=words[-1].timestamp.end
+                        start=merged_words[0].timestamp.start, end=merged_words[-1].timestamp.end
                     ),
-                    text=segment.get("text", "").strip(),
+                    text=" ".join([w.text for w in merged_words]),
                     speaker_id="Unknown",
                     confidence=ConfidenceScore(1.0),
-                    words=words,
+                    words=merged_words,
                 )
             )
 

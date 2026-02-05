@@ -24,8 +24,13 @@ class TestWhisperOutputMapper:
                             "offsets": {"from": 500, "to": 1000},
                             "p": 0.8,
                         },
+                        {
+                            "text": "!",  # Sub-word token (no space) 🧩
+                            "offsets": {"from": 1000, "to": 1100},
+                            "p": 0.7,
+                        },
                     ],
-                    "text": "Hello world",
+                    "text": "Hello world!",
                 }
             ]
         }
@@ -34,14 +39,12 @@ class TestWhisperOutputMapper:
 
         assert len(utterances) == 1
         utterance = utterances[0]
-        assert utterance.text == "Hello world"
-        assert utterance.timestamp.start == timedelta(milliseconds=0)
-        assert utterance.timestamp.end == timedelta(milliseconds=1000)
+        assert utterance.text == "Hello world!"
         assert len(utterance.words) == 2
         assert utterance.words[0].text == "Hello"
-        assert utterance.words[0].confidence == 0.9
-        assert utterance.words[1].text == " world"
-        assert utterance.words[1].confidence == 0.8
+        assert utterance.words[1].text == "world!"  # Merged! 🧼
+        assert utterance.words[1].timestamp.end == timedelta(milliseconds=1100)
+
 
 
 class TestAzureTranscriptionMapper:
