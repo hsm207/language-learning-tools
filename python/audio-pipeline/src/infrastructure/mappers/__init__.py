@@ -1,2 +1,2 @@
-from .whisper_mapper import WhisperOutputMapper
-from .azure_mapper import AzureTranscriptionMapper
+from .transcription import WhisperOutputMapper, AzureTranscriptionMapper
+from .inference import AzureInferenceTranslationMapper, AzureInferenceAnnotationMapper

@@ -6,7 +6,7 @@ import httpx
 from src.domain.interfaces import ILogger, ILinguisticAnnotationService
 from src.domain.value_objects import LanguageTag
 from src.infrastructure.logging import NullLogger
-from src.infrastructure.azure_inference_annotation_mapper import AzureInferenceAnnotationMapper
+from src.infrastructure.mappers.inference import AzureInferenceAnnotationMapper
 
 class AzureInferenceAnnotationService(ILinguisticAnnotationService):
     """

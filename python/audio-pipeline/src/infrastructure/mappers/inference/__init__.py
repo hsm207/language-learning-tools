@@ -1,0 +1,2 @@
+from .azure_translation import AzureInferenceTranslationMapper
+from .azure_annotation import AzureInferenceAnnotationMapper

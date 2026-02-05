@@ -10,7 +10,7 @@ from src.domain.value_objects import (
     Utterance,
     LanguageTag,
 )
-from src.infrastructure.mappers import WhisperOutputMapper, AzureTranscriptionMapper
+from src.infrastructure.mappers.transcription import WhisperOutputMapper, AzureTranscriptionMapper
 
 
 class WhisperTranscriber(ITranscriber):

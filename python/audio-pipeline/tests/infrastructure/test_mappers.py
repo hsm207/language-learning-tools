@@ -1,5 +1,5 @@
 import pytest
-from src.infrastructure.mappers import WhisperOutputMapper, AzureTranscriptionMapper
+from src.infrastructure.mappers.transcription import WhisperOutputMapper, AzureTranscriptionMapper
 from datetime import timedelta
 
 

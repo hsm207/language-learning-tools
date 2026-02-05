@@ -1,6 +1,6 @@
 import json
 import pytest
-from src.infrastructure.azure_inference_translation_mapper import AzureInferenceTranslationMapper
+from src.infrastructure.mappers.inference import AzureInferenceTranslationMapper
 from src.domain.value_objects import LanguageTag
 
 def test_translation_mapper_extracts_model_name_correctly():
