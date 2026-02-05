@@ -16,7 +16,7 @@ from src.infrastructure.event_handlers import LoggingEventHandler
 from src.infrastructure.serialization import JsonTranscriptSerializer
 from src.infrastructure.repositories import FileSystemResultRepository
 from src.application.pipeline import AudioProcessingPipeline
-from src.application.services import MaxOverlapAlignmentService
+from src.application.services import MaxOverlapAlignmentService, DomainTelemetryService
 from src.application.enrichers.segmentation import SentenceSegmentationEnricher
 from src.application.enrichers.translation import TranslationEnricher
 from src.domain.entities import JobStatus
@@ -36,6 +36,8 @@ def test_pipeline_end_to_end_real_components(caplog):
     # ⚡️ Reactive Event Bus Setup
     event_bus = InProcessEventBus()
     LoggingEventHandler(logger=logger, bus=event_bus)
+    
+    telemetry_service = DomainTelemetryService(event_bus=event_bus)
 
     audio_processor = FFmpegAudioProcessor()
     transcriber = WhisperTranscriber(
@@ -67,6 +69,7 @@ def test_pipeline_end_to_end_real_components(caplog):
         diarizer=diarizer,
         alignment_service=MaxOverlapAlignmentService(),
         event_bus=event_bus,
+        telemetry_service=telemetry_service,
         enrichers=enrichers,
         logger=logger,
     )
@@ -108,4 +111,4 @@ def test_pipeline_end_to_end_real_components(caplog):
 
         # Verify Timing Logs in Console! ⏱️📈✅
         assert "Finished 🎤 Transcription (de) in" in caplog.text
-        assert "Total processing time:" in caplog.text
+        assert "Total processing duration:" in caplog.text
