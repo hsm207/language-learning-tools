@@ -12,7 +12,6 @@ from src.domain.interfaces import (
     IAlignmentService,
     IEventBus,
 )
-from src.infrastructure.logging import NullLogger
 from src.domain.entities import ProcessingJob, JobStatus
 from src.domain.value_objects import LanguageTag, DiarizationOptions, AudioTranscript
 
@@ -25,7 +24,7 @@ class AudioProcessingPipeline:
         diarizer: IDiarizer,
         alignment_service: IAlignmentService,
         event_bus: IEventBus,
-        logger: ILogger = NullLogger(),
+        logger: ILogger,
         enrichers: List[IAudioEnricher] = None,
     ):
         self.audio_processor = audio_processor

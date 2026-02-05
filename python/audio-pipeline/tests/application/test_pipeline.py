@@ -79,6 +79,7 @@ def test_pipeline_fails_on_missing_language(mocker):
         diarizer=mocker.Mock(),
         alignment_service=mocker.Mock(),
         event_bus=mocker.Mock(),
+        logger=mocker.Mock(),
     )
 
     mocker.patch("os.path.exists", return_value=True)

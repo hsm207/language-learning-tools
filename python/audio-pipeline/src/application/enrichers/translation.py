@@ -1,7 +1,6 @@
 import dataclasses
 from typing import List
 from src.domain.interfaces import IAudioEnricher, ITranslator, ILogger
-from src.infrastructure.logging import NullLogger
 from src.domain.value_objects import Utterance, LanguageTag
 
 
@@ -15,9 +14,9 @@ class TranslationEnricher(IAudioEnricher):
         self,
         translator: ITranslator,
         target_lang: LanguageTag,
+        logger: ILogger,
         batch_size: int = 10,
         context_size: int = 0,
-        logger: ILogger = NullLogger(),
     ):
         self.translator = translator
         self.target_lang = target_lang

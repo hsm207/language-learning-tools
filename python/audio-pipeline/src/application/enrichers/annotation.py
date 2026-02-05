@@ -1,7 +1,6 @@
 import dataclasses
 from typing import List
 from src.domain.interfaces import IAudioEnricher, ILinguisticAnnotationService, ILogger
-from src.infrastructure.logging import NullLogger
 from src.domain.value_objects import Utterance, LanguageTag
 
 class LinguisticAnnotationEnricher(IAudioEnricher):
@@ -13,9 +12,9 @@ class LinguisticAnnotationEnricher(IAudioEnricher):
     def __init__(
         self,
         annotation_service: ILinguisticAnnotationService,
+        logger: ILogger,
         batch_size: int = 1, # Strict 1:1 for now! 📏⚖️
         context_size: int = 10,
-        logger: ILogger = NullLogger(),
     ):
         self.annotation_service = annotation_service
         self.batch_size = batch_size

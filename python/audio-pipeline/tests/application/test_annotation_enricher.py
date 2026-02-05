@@ -5,7 +5,7 @@ from typing import List, Optional
 from src.application.enrichers.annotation import LinguisticAnnotationEnricher
 from src.domain.interfaces import ILinguisticAnnotationService
 from src.domain.value_objects import Utterance, LanguageTag, TimestampRange, ConfidenceScore
-from src.infrastructure.logging import StandardLogger
+from src.infrastructure.logging import StandardLogger, NullLogger
 
 class MockAnnotationService(ILinguisticAnnotationService) :
     def __init__(self):
@@ -47,7 +47,8 @@ def test_enricher_provides_bidirectional_context():
     enricher = LinguisticAnnotationEnricher(
         annotation_service=mock_service,
         batch_size=1,
-        context_size=2
+        context_size=2,
+        logger=NullLogger()
     )
     
     # Act
@@ -78,7 +79,12 @@ def test_enricher_handles_context_at_boundaries():
         create_simple_utterance("End")
     ]
     mock_service = MockAnnotationService()
-    enricher = LinguisticAnnotationEnricher(mock_service, batch_size=1, context_size=10)
+    enricher = LinguisticAnnotationEnricher(
+        mock_service, 
+        batch_size=1, 
+        context_size=10,
+        logger=NullLogger()
+    )
     
     enricher.enrich(utterances, LanguageTag("de"))
     

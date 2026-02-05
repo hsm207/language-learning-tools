@@ -19,6 +19,7 @@ def test_pipeline_records_component_durations(mocker):
         diarizer=mocker.Mock(),
         alignment_service=mocker.Mock(),
         event_bus=mock_bus,
+        logger=mocker.Mock(),
     )
 
     mocker.patch("os.path.exists", return_value=True)

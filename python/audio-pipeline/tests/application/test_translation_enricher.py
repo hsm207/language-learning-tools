@@ -30,6 +30,7 @@ def test_translation_enricher_sliding_window_logic(mocker):
         target_lang=LanguageTag("en"),
         batch_size=3,
         context_size=2,
+        logger=mocker.Mock(),
     )
 
     # 3. Create a sequence of 10 dummy utterances
