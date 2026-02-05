@@ -1,9 +1,7 @@
-from typing import List, Callable, Type, TypeVar, Any, Dict
+from typing import List, Callable, Type, Any, Dict
 from collections import defaultdict
-from src.domain.interfaces import IEventBus
+from src.domain.interfaces import IEventBus, T
 from src.domain.events import DomainEvent
-
-T = TypeVar("T", bound=DomainEvent)
 
 
 class InProcessEventBus(IEventBus):

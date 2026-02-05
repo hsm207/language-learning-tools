@@ -30,8 +30,9 @@ class AzureInferenceTranslator(ITranslator):
     def translate(
         self,
         texts: List[str],
+        source_lang: LanguageTag,
         target_lang: LanguageTag,
-        context: Optional[List[str]] = None,
+        context: List[str] = None,
     ) -> List[str]:
         if not texts:
             return []

@@ -45,6 +45,7 @@ def test_azure_inference_translator_real_success(real_translator):
     texts = ["Hallo, wie geht es dir?", "Ich liebe sauberen Code."]
     results = real_translator.translate(
         texts=texts,
+        source_lang=LanguageTag("de"),
         target_lang=LanguageTag("en")
     )
 
@@ -55,7 +56,7 @@ def test_azure_inference_translator_real_success(real_translator):
 
 def test_azure_inference_translator_real_empty_input(real_translator):
     """Verifies handling of empty input. 🧼🚿"""
-    results = real_translator.translate([], LanguageTag("en"))
+    results = real_translator.translate([], LanguageTag("de"), LanguageTag("en"))
     assert results == []
 
 
@@ -63,6 +64,7 @@ def test_azure_inference_translator_real_context_fidelity(real_translator):
     """Verifies that context is used to disambiguate terms. 🎯🔬"""
     results = real_translator.translate(
         texts=["Ich gehe zur Bank."],
+        source_lang=LanguageTag("de"),
         target_lang=LanguageTag("en"),
         context=["Ich muss Geld abheben."],
     )
@@ -95,7 +97,7 @@ def test_azure_inference_translator_retry_on_429(mock_translator, mocker):
         "httpx.Client.post", side_effect=[mock_response_429, mock_response_200]
     )
 
-    results = mock_translator.translate(["Hallo"], LanguageTag("en"))
+    results = mock_translator.translate(["Hallo"], LanguageTag("de"), LanguageTag("en"))
 
     assert results == ["Hello"]
     assert mock_post.call_count == 2
@@ -109,7 +111,7 @@ def test_azure_inference_translator_exhausts_retries_on_exception(
     mocker.patch("httpx.Client.post", side_effect=Exception("Connection failure"))
 
     results = mock_translator.translate(
-        ["Hallo", "Welt"], LanguageTag("en")
+        ["Hallo", "Welt"], LanguageTag("de"), LanguageTag("en")
     )
 
     assert results == ["", ""]

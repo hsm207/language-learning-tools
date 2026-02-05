@@ -31,7 +31,7 @@ class AzureInferenceAnnotationService(ILinguisticAnnotationService):
         self,
         texts: List[str],
         language: LanguageTag,
-        context: Optional[List[str]] = None,
+        context: List[str] = None,
     ) -> List[Optional[str]]:
         if not texts:
             return []
