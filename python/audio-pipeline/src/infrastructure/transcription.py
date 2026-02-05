@@ -3,17 +3,14 @@ import json
 import os
 import httpx
 from typing import List
-from datetime import timedelta
 from src.domain.interfaces import ITranscriber, ILogger
 from src.infrastructure.logging import NullLogger
 from src.domain.entities import AudioArtifact
 from src.domain.value_objects import (
     Utterance,
     LanguageTag,
-    TimestampRange,
-    ConfidenceScore,
-    Word,
 )
+from src.infrastructure.mappers import WhisperOutputMapper, AzureTranscriptionMapper
 
 
 class WhisperTranscriber(ITranscriber):
@@ -23,6 +20,7 @@ class WhisperTranscriber(ITranscriber):
         self.executable_path = executable_path
         self.model_path = model_path
         self.logger = logger
+        self.mapper = WhisperOutputMapper()
 
     def transcribe(
         self, audio: AudioArtifact, language: LanguageTag
@@ -64,58 +62,7 @@ class WhisperTranscriber(ITranscriber):
         with open(json_path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
-        if not data or "transcription" not in data:
-            return []
-
-        utterances = []
-        for segment in data.get("transcription", []):
-            offsets = segment.get("offsets", {})
-            seg_start = offsets.get("from", 0)
-            seg_end = offsets.get("to", 0)
-
-            # Step 1: Collect ALL raw tokens from this segment.
-            # We treat tokens as 'Words' for now so the pipeline can process them.
-            words = []
-            for token in segment.get("tokens", []):
-                t_text = token.get("text", "")
-
-                # Filter out Whisper control tokens
-                if not t_text or t_text.strip().startswith("[_"):
-                    continue
-
-                t_offsets = token.get("offsets", {})
-                t_start = t_offsets.get("from", seg_start)
-                t_end = t_offsets.get("to", seg_end)
-                t_conf = token.get("p", 1.0)
-
-                words.append(
-                    Word(
-                        text=t_text,  # KEEP RAW TEXT (including spaces) for later merging logic!
-                        timestamp=TimestampRange(
-                            start=timedelta(milliseconds=t_start),
-                            end=timedelta(milliseconds=t_end),
-                        ),
-                        confidence=ConfidenceScore(t_conf),
-                    )
-                )
-
-            if not words:
-                continue
-
-            # Return the segment as an Utterance bounded by its tokens! 📏🎯
-            utterances.append(
-                Utterance(
-                    timestamp=TimestampRange(
-                        start=words[0].timestamp.start, end=words[-1].timestamp.end
-                    ),
-                    text=segment.get("text", "").strip(),
-                    speaker_id="Unknown",
-                    confidence=ConfidenceScore(1.0),
-                    words=words,
-                )
-            )
-
-        return utterances
+        return self.mapper.map(data)
 
 
 class AzureFastTranscriber(ITranscriber):
@@ -134,6 +81,7 @@ class AzureFastTranscriber(ITranscriber):
         self.region = region
         self.logger = logger
         self.endpoint = f"https://{self.region}.api.cognitive.microsoft.com/speechtotext/transcriptions:transcribe?api-version=2025-10-15"
+        self.mapper = AzureTranscriptionMapper()
 
     def transcribe(
         self, audio: AudioArtifact, language: LanguageTag
@@ -175,41 +123,4 @@ class AzureFastTranscriber(ITranscriber):
         except Exception as e:
             self.logger.warning(f"⚠️ Failed to save raw Azure artifact: {e}")
 
-        return self._map_to_utterances(data)
-
-    def _map_to_utterances(self, data: dict) -> List[Utterance]:
-        utterances = []
-        for phrase in data.get("phrases", []):
-            offset_ms = phrase.get("offsetMilliseconds", 0)
-            duration_ms = phrase.get("durationMilliseconds", 0)
-            speaker_id = str(phrase.get("speaker", "Unknown"))
-
-            words = []
-            for word_data in phrase["words"]:
-                w_offset = word_data.get("offsetMilliseconds", offset_ms)
-                w_duration = word_data.get("durationMilliseconds", 0)
-                words.append(
-                    Word(
-                        text=word_data.get("text", ""),
-                        timestamp=TimestampRange(
-                            start=timedelta(milliseconds=w_offset),
-                            end=timedelta(milliseconds=w_offset + w_duration),
-                        ),
-                        confidence=ConfidenceScore(word_data.get("confidence", 1.0)),
-                    )
-                )
-
-            utterances.append(
-                Utterance(
-                    timestamp=TimestampRange(
-                        start=timedelta(milliseconds=offset_ms),
-                        end=timedelta(milliseconds=offset_ms + duration_ms),
-                    ),
-                    text=phrase.get("text", ""),
-                    speaker_id=speaker_id,
-                    confidence=ConfidenceScore(phrase.get("confidence", 1.0)),
-                    words=words,
-                )
-            )
-
-        return utterances
+        return self.mapper.map(data)
