@@ -1,4 +1,4 @@
-root   ::= "{" ws "\"translation\"" ":" ws string "}" ws
+root   ::= "{" ws "\"translations\"" ":" ws "[" ws (string ("," ws string)*)? ws "]" ws "}" ws
 
 string ::=
   "\"" (

@@ -71,7 +71,7 @@ def test_llama_cpp_translator_parsing_logic_mocked(mocker):
     mock_raw_output = b"""
 Loading model... done.
 {
-  "translation": "Correctly Extracted Text"
+  "translations": ["Correctly Extracted Text 1", "Second Translation"]
 }
 [end of text]
 
@@ -84,10 +84,12 @@ common_perf_print: sampling time = 100ms
     mocker.patch("subprocess.run", return_value=mock_process)
 
     # Act
-    results = translator.translate(["some text"], LanguageTag("de"), LanguageTag("en"))
+    results = translator.translate(["text 1", "text 2"], LanguageTag("de"), LanguageTag("en"))
 
     # Assert: Surgical Extraction Verification! 🎯
-    assert results[0] == "Correctly Extracted Text"
+    assert results[0] == "Correctly Extracted Text 1"
+    assert results[1] == "Second Translation"
+
 
 
 def test_llama_cpp_translator_handles_empty_input(mocker):
@@ -110,7 +112,7 @@ def test_llama_cpp_translator_handles_subprocess_error(mocker):
 def test_llama_cpp_translator_handles_invalid_json(mocker):
     """Verifies that malformed model output is handled safely. 🧬🥊"""
     mocker.patch("os.path.exists", return_value=True)
-    mock_res = mocker.Mock(stdout="{ 'broken': 'json' }")
+    mock_res = mocker.Mock(stdout=b"{ 'broken': 'json' }")
     mocker.patch("subprocess.run", return_value=mock_res)
     translator = LlamaCppTranslator("m", "e", "g")
 
@@ -121,7 +123,7 @@ def test_llama_cpp_translator_handles_invalid_json(mocker):
 def test_llama_cpp_translator_handles_no_json_found(mocker):
     """Verifies behavior when the output contains no braces. 🚫📦"""
     mocker.patch("os.path.exists", return_value=True)
-    mock_res = mocker.Mock(stdout="No JSON here, just chatty vibes!")
+    mock_res = mocker.Mock(stdout=b"No JSON here, just chatty vibes!")
     mocker.patch("subprocess.run", return_value=mock_res)
     translator = LlamaCppTranslator("m", "e", "g")
 

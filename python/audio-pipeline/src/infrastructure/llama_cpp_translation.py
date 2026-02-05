@@ -47,21 +47,27 @@ class LlamaCppTranslator(ITranslator):
         if not texts:
             return []
 
-        return [self._translate_single(text, context) for text in texts]
-
-    def _translate_single(self, text: str, context: Optional[List[str]]) -> str:
-        """Orchestrates the translation of a single text turn. ⚓️🎯"""
-        prompt = self._build_prompt(text, context)
+        prompt = self._build_prompt(texts, context)
 
         try:
-            raw_output = self._run_inference(prompt)
-            return self._extract_field(raw_output, "translation")
+            raw_output = self._run_inference(prompt, len(texts))
+            translations = self._extract_list_field(raw_output, "translations")
+            
+            if len(translations) != len(texts):
+                self.logger.warning(f"⚠️ Translation count mismatch! Expected {len(texts)}, got {len(translations)}")
+                # Fill missing with empty strings or slice if too many
+                return (translations + [""] * len(texts))[:len(texts)]
+            
+            return translations
         except Exception as e:
-            self.logger.error(f"❌ Local Llama translation failed: {str(e)}")
-            return ""
+            self.logger.error(f"❌ Local Llama batch translation failed: {str(e)}")
+            return [""] * len(texts)
 
-    def _run_inference(self, prompt: str) -> str:
+    def _run_inference(self, prompt: str, batch_size: int = 1) -> str:
         """Executes the llama-cli process and captures the raw output. 🏎️💨"""
+        # Dynamic token limit: 128 per text turn 📈💎
+        max_tokens = 128 * batch_size
+        
         cmd = [
             self.executable_path,
             "-m",
@@ -71,7 +77,7 @@ class LlamaCppTranslator(ITranslator):
             "--grammar-file",
             self.grammar_path,
             "-n",
-            "128",  # Predict max 128 tokens
+            str(max_tokens),
             "--temp",
             "0.1",  # Low temperature for deterministic output
             "--threads",
@@ -90,37 +96,39 @@ class LlamaCppTranslator(ITranslator):
         process = subprocess.run(cmd, capture_output=True, text=False, check=True)
         return process.stdout.decode("utf-8", errors="replace").strip()
 
-    def _extract_field(self, raw_output: str, field_name: str) -> str:
-        """Extracts a field from the first JSON block found in output. ✂️💎"""
-        # We slice between '{' and '}' because llama-cli often appends trailing artifacts
-        # like ' [end of text]', metrics, or newlines that break direct json.loads() calls.
+    def _extract_list_field(self, raw_output: str, field_name: str) -> List[str]:
+        """Extracts a list field from the first JSON block found in output. ✂️💎"""
         json_start = raw_output.find("{")
         json_end = raw_output.rfind("}")
 
         if json_start == -1 or json_end == -1:
             self.logger.error(f"❌ No JSON block found in Llama output: {raw_output}")
-            return ""
+            return []
 
         json_str = raw_output[json_start : json_end + 1]
         try:
             data = json.loads(json_str)
-            return data.get(field_name, "").strip()
+            result = data.get(field_name, [])
+            return [str(s).strip() for s in result]
         except json.JSONDecodeError:
             self.logger.error(f"❌ Failed to parse extracted JSON: {json_str}")
-            return ""
+            return []
 
-    def _build_prompt(self, text: str, context: List[str] = None) -> str:
-        """Constructs a high-fidelity Llama 3.1 Instruct prompt with high precision. 🏛️💎"""
+    def _build_prompt(self, texts: List[str], context: List[str] = None) -> str:
+        """Constructs a high-fidelity Llama 3.1 Instruct prompt for batch translation. 🏛️💎"""
         system_msg = (
-            "You are a specialized translation engine. Your ONLY task is to translate the string labeled 'TARGET'. "
+            "You are a specialized translation engine. Your task is to translate the list of strings labeled 'TARGETS'. "
             "The 'CONTEXT' strings are for reference only—DO NOT translate them. "
-            "Output ONLY the English translation of the 'TARGET' string in the required JSON format."
+            "Output a JSON object with a single key 'translations' containing an array of English translations "
+            "corresponding 1:1 to the input strings."
         )
 
         context_str = "\n".join(context) if context else "None"
+        targets_str = "\n".join([f"{i+1}. {t}" for i, t in enumerate(texts)])
+        
         user_msg = (
             f"CONTEXT (for reference only):\n{context_str}\n\n"
-            f"TARGET (translate this line):\n{text}"
+            f"TARGETS (translate these {len(texts)} lines individually):\n{targets_str}"
         )
 
         return (
