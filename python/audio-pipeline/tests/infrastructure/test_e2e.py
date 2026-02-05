@@ -37,7 +37,7 @@ def test_pipeline_end_to_end_real_components(caplog):
     event_bus = InProcessEventBus()
     LoggingEventHandler(logger=logger, bus=event_bus)
     
-    telemetry_service = DomainTelemetryService(event_bus=event_bus)
+    telemetry_service = DomainTelemetryService(event_bus=event_bus, logger=logger)
 
     audio_processor = FFmpegAudioProcessor()
     transcriber = WhisperTranscriber(
@@ -106,8 +106,8 @@ def test_pipeline_end_to_end_real_components(caplog):
         assert first_utterance.speaker_id.startswith("SPEAKER_")
 
         # Verify Translation! 🇩🇪 -> 🇺🇸
-        assert first_utterance.translated_text is not None, "Translation missing!"
-        assert len(first_utterance.translated_text) > 0, "Translation is empty!"
+        assert first_utterance.metadata.get("translated_text") is not None, "Translation missing!"
+        assert len(first_utterance.metadata.get("translated_text")) > 0, "Translation is empty!"
 
         # Verify Timing Logs in Console! ⏱️📈✅
         assert "Finished 🎤 Transcription (de) in" in caplog.text

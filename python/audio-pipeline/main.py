@@ -84,7 +84,7 @@ def main():
     event_bus = InProcessEventBus()
     LoggingEventHandler(logger=logger, bus=event_bus)
 
-    telemetry_service = DomainTelemetryService(event_bus=event_bus)
+    telemetry_service = DomainTelemetryService(event_bus=event_bus, logger=logger)
 
     # 🏗️ Build Components using Factory
     factory = PipelineComponentFactory(args, logger)

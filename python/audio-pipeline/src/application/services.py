@@ -2,7 +2,12 @@ import time
 from typing import List, Generator
 from uuid import UUID
 from contextlib import contextmanager
-from src.domain.interfaces import IAlignmentService, ITelemetryService, IEventPublisher
+from src.domain.interfaces import (
+    IAlignmentService,
+    ITelemetryService,
+    IEventPublisher,
+    ILogger,
+)
 from src.domain.value_objects import Utterance
 from src.domain.events import PipelineStepTimed
 
@@ -12,8 +17,9 @@ class DomainTelemetryService(ITelemetryService):
     Application service for measuring and recording component durations. ⏱️📈✨
     """
 
-    def __init__(self, event_bus: IEventPublisher):
+    def __init__(self, event_bus: IEventPublisher, logger: ILogger):
         self.event_bus = event_bus
+        self.logger = logger
 
     @contextmanager
     def timed_step(self, job_id: UUID, step_name: str) -> Generator[None, None, None]:
@@ -30,7 +36,7 @@ class DomainTelemetryService(ITelemetryService):
 
     def record_total_duration(self, duration: float):
         """Logs the total duration of the pipeline execution. ⏱️📈✨"""
-        print(f"⏱️ Total processing duration: {duration:.2f}s")
+        self.logger.info(f"⏱️ Total processing duration: {duration:.2f}s")
 
 
 
