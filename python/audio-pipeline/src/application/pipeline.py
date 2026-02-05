@@ -14,6 +14,15 @@ from src.domain.interfaces import (
 )
 from src.domain.entities import ProcessingJob, JobStatus
 from src.domain.value_objects import LanguageTag, DiarizationOptions, AudioTranscript
+from src.domain.events import (
+    AudioIngested,
+    SpeechTranscribed,
+    SpeakersIdentified,
+    JobCompleted,
+    JobFailed,
+    EnrichmentStarted,
+    PipelineStepTimed,
+)
 
 
 class AudioProcessingPipeline:
@@ -55,32 +64,37 @@ class AudioProcessingPipeline:
         try:
             with self._timed_step(job, "📦 Ingestion & Normalization"):
                 job.mark_ingested()
+                self.event_bus.publish(
+                    AudioIngested(job_id=job.id, source_path=job.source_path)
+                )
                 artifact = self.audio_processor.normalize(source_path)
-                self._flush_events(job)
 
             with self._timed_step(job, f"🎤 Transcription ({language})"):
                 job.mark_transcribing()
                 raw_utterances = (
                     self.transcriber.transcribe(artifact, job.target_language) or []
                 )
-                job.record_transcription_finished(
-                    len(raw_utterances), job.target_language
+                self.event_bus.publish(
+                    SpeechTranscribed(
+                        job_id=job.id,
+                        utterance_count=len(raw_utterances),
+                        language=job.target_language,
+                    )
                 )
-                self._flush_events(job)
 
             with self._timed_step(job, "🕵️‍♀️ Diarization"):
                 job.mark_diarizing()
                 diarized_segments = (
                     self.diarizer.diarize(artifact, options=diarization_options) or []
                 )
-                job.record_diarization_finished(len(diarized_segments))
-                self._flush_events(job)
+                self.event_bus.publish(
+                    SpeakersIdentified(job_id=job.id, speaker_count=len(diarized_segments))
+                )
 
             with self._timed_step(job, "🧩 Alignment"):
                 final_utterances = self.alignment_service.align(
                     raw_utterances, diarized_segments
                 )
-                self._flush_events(job)
 
             if self.enrichers:
                 for i, enricher in enumerate(self.enrichers):
@@ -90,14 +104,18 @@ class AudioProcessingPipeline:
                         else f"Enricher #{i+1}"
                     )
                     with self._timed_step(job, f"✨ Enrichment: {enricher_name}"):
-                        job.mark_enriching(enricher_name)
-                        self._flush_events(job)
+                        job.mark_enriching()
+                        self.event_bus.publish(
+                            EnrichmentStarted(job_id=job.id, enricher_name=enricher_name)
+                        )
                         final_utterances = enricher.enrich(
                             final_utterances, job.target_language
                         )
 
             job.complete(AudioTranscript(utterances=final_utterances))
-            self._flush_events(job)
+            self.event_bus.publish(
+                JobCompleted(job_id=job.id, utterance_count=len(final_utterances))
+            )
 
             total_duration = time.time() - total_start_time
             self.logger.info(
@@ -106,14 +124,9 @@ class AudioProcessingPipeline:
 
         except Exception as e:
             job.fail(str(e))
-            self._flush_events(job)
+            self.event_bus.publish(JobFailed(job_id=job.id, error_message=str(e)))
 
         return job
-
-    def _flush_events(self, job: ProcessingJob):
-        """Dispatches all pending events from the job to the event bus. ⚡️"""
-        for event in job.pull_events():
-            self.event_bus.publish(event)
 
     @contextmanager
     def _timed_step(
@@ -125,8 +138,11 @@ class AudioProcessingPipeline:
             yield
         finally:
             duration = time.time() - start_time
-            job.record_step_duration(step_name, duration)
-            self._flush_events(job)
+            self.event_bus.publish(
+                PipelineStepTimed(
+                    job_id=job.id, step_name=step_name, duration_seconds=duration
+                )
+            )
 
     def _format_duration(self, seconds: float) -> str:
         """Converts raw seconds into a beautiful, human-readable string."""
