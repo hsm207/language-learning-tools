@@ -30,7 +30,7 @@ def test_json_transcript_serializer_projects_all_fields():
         speaker_id="SPEAKER_01",
         confidence=ConfidenceScore(0.99),
         words=words,
-        translated_text="Hello",  # This is our new requirement! 🗽💎
+        metadata={"translated_text": "Hello"},  # This is our new requirement! 🗽💎
     )
     transcript = AudioTranscript(
         utterances=[utterance],

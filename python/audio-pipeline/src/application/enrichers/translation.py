@@ -56,11 +56,13 @@ class TranslationEnricher(IAudioEnricher):
                     translated_texts = [""] * len(target_batch)
 
                 for u, translated in zip(target_batch, translated_texts):
-                    enriched.append(dataclasses.replace(u, translated_text=translated))
+                    new_metadata = dict(u.metadata)
+                    new_metadata["translated_text"] = translated
+                    enriched.append(dataclasses.replace(u, metadata=new_metadata))
 
             except Exception as e:
                 self.logger.error(f"❌ Translation batch failed: {str(e)}")
                 for u in target_batch:
-                    enriched.append(dataclasses.replace(u, translated_text=""))
+                    enriched.append(u)
 
         return enriched

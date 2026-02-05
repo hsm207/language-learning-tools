@@ -127,7 +127,7 @@ def test_enricher_is_resilient_to_service_failures(caplog):
     assert len(results) == 1
     assert results[0].text == "Stay Pure"
     # Now it is distinguishable! 🚩✨
-    assert results[0].learner_notes == "[Annotation Service Unavailable ⚠️]"
+    assert results[0].metadata["learner_notes"] == "[Annotation Service Unavailable ⚠️]"
     assert "Annotation failed" in caplog.text
     print("\n✅ Resilience verified: Error sentinel correctly set! 🛡️🌊")
 

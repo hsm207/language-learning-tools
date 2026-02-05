@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import timedelta
-from typing import NewType, List, Optional
+from typing import NewType, List, Optional, Dict, Any
 
 LanguageTag = NewType("LanguageTag", str)
 ConfidenceScore = NewType("ConfidenceScore", float)
@@ -37,8 +37,7 @@ class Utterance:
     speaker_id: str
     confidence: ConfidenceScore
     words: List[Word] = field(default_factory=list)
-    translated_text: Optional[str] = None
-    learner_notes: Optional[str] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
         for word in self.words:

@@ -25,16 +25,17 @@ class JsonTranscriptSerializer(ITranscriptSerializer):
         return json.dumps(data, indent=2, ensure_ascii=False)
 
     def _utterance_to_dict(self, u: Utterance) -> Dict[str, Any]:
-        return {
+        data = {
             "start": u.timestamp.start.total_seconds(),
             "end": u.timestamp.end.total_seconds(),
             "speaker": u.speaker_id,
             "text": u.text,
-            "translated_text": u.translated_text,
-            "learner_notes": u.learner_notes,
             "confidence": float(u.confidence),
             "words": [self._word_to_dict(w) for w in u.words],
         }
+        # Flatly merge metadata for simpler consumption by consumers! 🧼💎
+        data.update(u.metadata)
+        return data
 
     def _word_to_dict(self, w: Word) -> Dict[str, Any]:
         return {

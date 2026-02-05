@@ -53,18 +53,22 @@ class LinguisticAnnotationEnricher(IAudioEnricher):
 
                 # Map annotations back to utterances with surgical precision 🎯
                 for j, annotation in enumerate(annotations):
+                    new_metadata = dict(enriched_utterances[i + j].metadata)
+                    new_metadata["learner_notes"] = annotation
                     enriched_utterances[i + j] = dataclasses.replace(
                         enriched_utterances[i + j],
-                        learner_notes=annotation
+                        metadata=new_metadata
                     )
                         
             except Exception as e:
                 self.logger.error(f"❌ Annotation failed for batch starting at {i}: {e}")
                 # 🚩 Resilience Sentinel: Mark the batch as 'Unverified'
                 for j in range(len(batch_slice)):
+                    new_metadata = dict(enriched_utterances[i + j].metadata)
+                    new_metadata["learner_notes"] = "[Annotation Service Unavailable ⚠️]"
                     enriched_utterances[i + j] = dataclasses.replace(
                         enriched_utterances[i + j],
-                        learner_notes="[Annotation Service Unavailable ⚠️]"
+                        metadata=new_metadata
                     )
 
         return enriched_utterances
