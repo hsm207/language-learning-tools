@@ -58,16 +58,27 @@ class LocalStackBuilder(IStackBuilder):
         alignment_service = MaxOverlapAlignmentService()
 
         transcriber = WhisperTranscriber(
-            executable_path="/home/user/Documents/GitHub/whisper.cpp/build/bin/whisper-cli",
-            model_path="/home/user/Documents/GitHub/whisper.cpp/models/ggml-large-v3.bin",
+            executable_path=os.environ.get(
+                "WHISPER_EXECUTABLE_PATH",
+                "/home/user/Documents/GitHub/whisper.cpp/build/bin/whisper-cli",
+            ),
+            model_path=os.environ.get(
+                "WHISPER_MODEL_PATH",
+                "/home/user/Documents/GitHub/whisper.cpp/models/ggml-large-v3.bin",
+            ),
             logger=logger,
         )
         diarizer = PyannoteDiarizer(logger=logger)
 
         # Build local translator
         translator = LlamaCppTranslator(
-            model_path="models/llama-3.1-8b-instruct-q4_k_m.gguf",
-            executable_path="/home/user/Documents/GitHub/llama.cpp/build/bin/llama-cli",
+            model_path=os.environ.get(
+                "LLAMA_MODEL_PATH", "models/llama-3.1-8b-instruct-q4_k_m.gguf"
+            ),
+            executable_path=os.environ.get(
+                "LLAMA_EXECUTABLE_PATH",
+                "/home/user/Documents/GitHub/llama.cpp/build/bin/llama-cli",
+            ),
             grammar_path="src/infrastructure/grammars/translation.gbnf",
             logger=logger,
         )
