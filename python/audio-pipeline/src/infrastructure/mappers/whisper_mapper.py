@@ -13,9 +13,11 @@ class WhisperOutputMapper:
     Maps Whisper JSON output to domain Utterance objects. 🎤🧩
     """
 
-    def map(self, data: dict, audio_file_path: str = "") -> List[Utterance]:
+    def map(self, data: dict, **kwargs) -> List[Utterance]:
         if not data or "transcription" not in data:
             return []
+
+        audio_file_path = kwargs.get("audio_file_path", "")
 
         utterances = []
         for segment in data.get("transcription", []):

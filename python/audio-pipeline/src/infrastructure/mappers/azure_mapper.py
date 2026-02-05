@@ -13,7 +13,7 @@ class AzureTranscriptionMapper:
     Maps Azure AI Speech JSON output to domain Utterance objects. ☁️🏷️
     """
 
-    def map(self, data: dict) -> List[Utterance]:
+    def map(self, data: dict, **kwargs) -> List[Utterance]:
         utterances = []
         for phrase in data.get("phrases", []):
             offset_ms = phrase.get("offsetMilliseconds", 0)
